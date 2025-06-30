@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Assembly REPL using Capstone and Unicorn engines
+Opasm Assembly REPL using Capstone and Unicorn engines
 Supports multiple architectures, register manipulation, state management, and more.
 """
 
@@ -372,7 +372,7 @@ class AssemblyREPL:
     def print_banner(self):
         """Print welcome banner using rich"""
         banner_panel = Panel.fit(
-            "[bold cyan]Assembly REPL v1.0[/bold cyan]\n"
+            "[bold cyan]Opasm Assembly REPL v1.0[/bold cyan]\n"
             "[dim]Powered by Capstone & Unicorn[/dim]",
             border_style="cyan",
             padding=(1, 2)
@@ -446,7 +446,7 @@ class AssemblyREPL:
             
         if compact:
             # Compact display for auto-display mode
-            table = Table(title=f"Registers ({self.arch_config.name.upper()})", box=box.SIMPLE, show_header=False, padding=0)
+            table = Table(title=f"Registers ({self.arch_config.name.upper()})", box=box.ROUNDED, show_header=False, padding=0)
             table.add_column("", style="cyan", min_width=8)
             table.add_column("", style="yellow", min_width=12)
             table.add_column("", style="cyan", min_width=8)
@@ -551,7 +551,7 @@ class AssemblyREPL:
             data = self.uc.mem_read(sp_value, stack_size)
             
             if compact:
-                table = Table(title="Stack", box=box.SIMPLE, show_header=False, padding=0)
+                table = Table(title="Stack", box=box.ROUNDED, show_header=False, padding=0)
                 table.add_column("", style="yellow", min_width=12)
                 table.add_column("", style="white", min_width=24)
                 table.add_column("", style="green", min_width=8)
@@ -743,7 +743,7 @@ class AssemblyREPL:
             context_instructions = instructions[start_idx:end_idx]
             
             if compact:
-                table = Table(title="Code", box=box.SIMPLE, show_header=False, padding=0)
+                table = Table(title="Code", box=box.ROUNDED, show_header=False, padding=0)
                 table.add_column("", style="yellow", min_width=12)
                 table.add_column("", style="cyan", min_width=16)
                 table.add_column("", style="white", min_width=20)
@@ -850,7 +850,7 @@ class AssemblyREPL:
             console.print(f"\n[cyan]Memory at 0x{address:x} ({size} bytes):[/cyan]")
             
             # Create memory dump table
-            table = Table(box=box.SIMPLE)
+            table = Table(box=box.ROUNDED)
             table.add_column("Address", style="yellow", min_width=12)
             table.add_column("Hex", style="white", min_width=48)
             table.add_column("ASCII", style="green", min_width=16)
@@ -953,7 +953,7 @@ class AssemblyREPL:
             
             console.print(f"\n[cyan]Disassembly at 0x{address:x}:[/cyan]")
             
-            table = Table(box=box.SIMPLE)
+            table = Table(box=box.ROUNDED)
             table.add_column("Address", style="yellow", min_width=12)
             table.add_column("Instruction", style="white", min_width=30)
             
