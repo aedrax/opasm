@@ -160,6 +160,7 @@ class AssemblyREPL:
         self.history = InMemoryHistory()
         self.auto_display = True  # Enable automatic register/stack display
         self.previous_state = {}  # Track previous register/memory state
+        self.direct_execution = False
         self.init_engine()
         
         # Command completions
@@ -167,7 +168,7 @@ class AssemblyREPL:
             'help', 'arch', 'registers', 'reg', 'memory', 'mem', 'regions', 'assemble', 'asm',
             'disasm', 'step', 'run', 'reset', 'save', 'load', 'load_asm', 'load_bin', 
             'dump_asm', 'dump_mem', 'set_reg', 'set_mem', 'breakpoint', 'bp', 'clear_bp', 
-            'list_bp', 'quit', 'exit', 'toggle_display'
+            'list_bp', 'quit', 'exit', 'toggle_display', 'toggle_direct'
         ]
         self._update_completer()
 
@@ -394,6 +395,7 @@ class AssemblyREPL:
   asm <instruction>      - Assemble and execute instruction
   step                   - Execute next instruction
   run <count>            - Run multiple instructions (default: 10)
+  toggle_direct          - Toggle direct execution mode (bypass memory loading)
 
 [bold green]State Inspection:[/bold green]
   registers, reg         - Show all registers
@@ -417,9 +419,18 @@ class AssemblyREPL:
   dump_asm <file>        - Dump assembly history to file
   dump_mem <file> <addr> <size> - Dump memory region to file
 
+[bold green]Display & Settings:[/bold green]
+  toggle_display         - Toggle automatic register/stack display
+  toggle_direct          - Toggle direct execution mode
+
 [bold green]General:[/bold green]
   help                   - Show this help
   quit, exit             - Exit the REPL
+
+[bold yellow]Execution Modes:[/bold yellow]
+  Normal Mode (default): Instructions are loaded into memory before execution
+  Direct Mode: Instructions execute without loading into memory first
+  Use 'toggle_direct' to switch between modes
 
 [bold yellow]Register Dereferencing:[/bold yellow]
   Use $ to reference register values:
@@ -432,7 +443,8 @@ class AssemblyREPL:
   set_reg eax 0x5678
   memory 0x400000 64
   memory $rip            - Show memory at current instruction pointer
-  bp $rax                - Set breakpoint at RAX value""",
+  bp $rax                - Set breakpoint at RAX value
+  toggle_direct          - Switch to direct execution mode""",
             title="Help",
             border_style="blue",
             padding=(1, 2)
@@ -879,6 +891,59 @@ class AssemblyREPL:
                 console.print("[red]Failed to assemble instruction[/red]")
                 return
             
+            if self.direct_execution:
+                # Direct execution mode - execute without loading into memory
+                self._execute_direct(instruction, machine_code)
+            else:
+                # Normal mode - load into memory first, then execute
+                self._execute_from_memory(instruction, machine_code)
+            
+        except Exception as e:
+            console.print(f"[red]Error executing instruction: {e}[/red]")
+
+    def _execute_direct(self, instruction: str, machine_code: bytes):
+        """Execute instruction directly without loading into memory first"""
+        try:
+            # Create a temporary memory region for direct execution
+            temp_addr = 0x50000000  # Use a different address space for direct execution
+            temp_size = 0x1000  # 4KB should be enough for single instructions
+            
+            # Map temporary memory if not already mapped
+            try:
+                self.uc.mem_map(temp_addr, temp_size)
+            except:
+                # Memory might already be mapped, that's okay
+                pass
+            
+            # Write machine code to temporary memory
+            self.uc.mem_write(temp_addr, machine_code)
+            
+            # Save current instruction pointer
+            ip_reg = self._get_ip_register()
+            original_ip = self.uc.reg_read(ip_reg)
+            
+            # Execute from temporary location
+            self.uc.emu_start(temp_addr, temp_addr + len(machine_code))
+            
+            # Restore instruction pointer (don't advance it in direct mode)
+            self.uc.reg_write(ip_reg, original_ip)
+            
+            # Add to history with special marking for direct execution
+            self.code_history.append({
+                'instruction': instruction,
+                'address': temp_addr,
+                'machine_code': machine_code.hex(),
+                'direct_execution': True
+            })
+            
+            console.print(f"[green]Executed (direct): {instruction}[/green]")
+            
+        except Exception as e:
+            console.print(f"[red]Error in direct execution: {e}[/red]")
+
+    def _execute_from_memory(self, instruction: str, machine_code: bytes):
+        """Execute instruction from memory (normal mode)"""
+        try:
             # Get current instruction pointer
             ip_reg = self._get_ip_register()
             current_ip = self.uc.reg_read(ip_reg)
@@ -893,13 +958,14 @@ class AssemblyREPL:
             self.code_history.append({
                 'instruction': instruction,
                 'address': current_ip,
-                'machine_code': machine_code.hex()
+                'machine_code': machine_code.hex(),
+                'direct_execution': False
             })
             
             console.print(f"[green]Executed: {instruction}[/green]")
             
         except Exception as e:
-            console.print(f"[red]Error executing instruction: {e}[/red]")
+            console.print(f"[red]Error in memory execution: {e}[/red]")
 
     def _simple_assemble(self, instruction: str) -> bytes:
         """Assemble instruction using keystone-engine"""
@@ -1433,6 +1499,16 @@ class AssemblyREPL:
                     self.auto_display = not self.auto_display
                     status = "enabled" if self.auto_display else "disabled"
                     console.print(f"[green]Auto-display {status}[/green]")
+                
+                elif command == 'toggle_direct':
+                    self.direct_execution = not self.direct_execution
+                    status = "enabled" if self.direct_execution else "disabled"
+                    mode_desc = "Direct execution mode" if self.direct_execution else "Normal execution mode"
+                    console.print(f"[green]{mode_desc} {status}[/green]")
+                    if self.direct_execution:
+                        console.print("[yellow]Instructions will execute without loading into memory first[/yellow]")
+                    else:
+                        console.print("[yellow]Instructions will be loaded into memory before execution[/yellow]")
                 
                 else:
                     # If it's not a known command, treat it as an assembly instruction
