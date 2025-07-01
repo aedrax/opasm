@@ -28,6 +28,7 @@ A comprehensive assembly language REPL (Read-Eval-Print Loop) with professional 
 - **Breakpoints**: Set and manage breakpoints with register dereferencing
 - **Single Stepping**: Step through code with automatic display updates
 - **Memory Inspection**: Rich hex dump display with ASCII representation
+- **Direct Execution Mode**: Execute instructions without loading into memory first
 - **Multiple Exit Methods**: `quit`, `exit`, Ctrl+C, Ctrl+D
 
 ## Visual Experience
@@ -124,6 +125,33 @@ asm-repl:x64> bp $rax          # Set breakpoint at RAX value
 asm-repl:x64> set_mem $rsp 0xdeadbeef
 ```
 
+### Direct Execution Mode
+```bash
+# Toggle to direct execution mode
+asm-repl:x64> toggle_direct
+Direct execution mode enabled
+Instructions will execute without loading into memory first
+
+# Execute instructions without affecting program memory
+asm-repl:x64> mov rax, 0x1234
+Executed (direct): mov rax, 0x1234    # Note: RIP unchanged
+
+# Toggle back to normal mode
+asm-repl:x64> toggle_direct
+Normal execution mode enabled
+Instructions will be loaded into memory before execution
+
+# Execute instructions normally (loads into memory)
+asm-repl:x64> mov rbx, 0x5678
+Executed: mov rbx, 0x5678             # Note: RIP advances
+```
+
+**Direct Mode Benefits:**
+- **Experimentation**: Test instructions without affecting program flow
+- **Debugging**: Execute instructions without modifying loaded programs
+- **Education**: See immediate register effects without memory side effects
+- **Analysis**: Understand instruction behavior in isolation
+
 ## Complete Command Reference
 
 ### **Architecture & Setup**
@@ -139,6 +167,7 @@ toggle_display          # Enable/disable automatic display
 mov rax, 0x1234         # Direct assembly (no prefix needed!)
 step                    # Execute next instruction with visual feedback
 run [count]             # Run multiple instructions (default: 10)
+toggle_direct           # Toggle between normal and direct execution modes
 ```
 
 ### **State Inspection**
