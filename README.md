@@ -1,5 +1,5 @@
 # Opasm - Assembly REPL
-![possum](https://github.com/user-attachments/assets/84cdd889-cda9-4c84-9d68-d9ec3e7d9f14)
+![possum](https://github.com/user-attachments/assets/08428fb0-c8f0-4ff6-a253-abd5913b9647)
 
 A comprehensive assembly language REPL (Read-Eval-Print Loop) with professional debugging features, built with Capstone and Unicorn engines. This tool provides an interactive environment for assembly development, reverse engineering, and education with real-time visual feedback.
 
