@@ -35,28 +35,8 @@ A comprehensive assembly language REPL (Read-Eval-Print Loop) with professional 
 
 On larger terminals, the REPL automatically displays:
 
-```bash
-asm-repl:x64> mov rax, 0x1234
+![image](https://github.com/user-attachments/assets/13d90e2d-50b1-4786-a105-74ec4f8807b7)
 
-Executed: mov rax, 0x1234
-
-┌─────────────── Registers (X64) ───────────────────────────────────────────┐
-│ RAX  0x0000000000001234  RBX  0x0000000000000000  RCX  0x0000000000000000 │
-│ RDX  0x0000000000000000  RSI  0x0000000000000000  RDI  0x0000000000000000 │
-│ RSP  0x00007fff00080000  RBP  0x0000000000000000  RIP  0x0000000000400007 │
-└───────────────────────────────────────────────────────────────────────────┘
-
-┌──────────── Stack ──────────────────────────┐
-│ 0x7fff00080000:  0x0000000000000000  <-- SP │
-│ 0x7fff00080008:  0x0000000000000000         │
-└─────────────────────────────────────────────┘
-
-┌────────────────── Code ─────────────────────────────────┐
-│ 0x00400000:  48 c7 c0 34 12 00 00  mov rax, 0x1234      │
-│ 0x00400007:  48 c7 c3 11 11 00 00  mov rbx, 0x1111  <-- │  ← Current instruction
-│ 0x0040000e:  48 c7 c1 22 22 00 00  mov rcx, 0x2222      │
-└─────────────────────────────────────────────────────────┘
-```
 *Changed values highlighted in **bold**, current instruction marked with `<--`*
 
 ## Installation
