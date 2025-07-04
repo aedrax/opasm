@@ -977,28 +977,15 @@ class AssemblyREPL:
                 return bytes(encoding)
         except Exception as e:
             console.print(f"[yellow]Keystone assembly failed: {e}[/yellow]")
-        
-        # Fallback to basic assembly for simple instructions
-        instruction = instruction.strip().lower()
-        
-        # Basic x86/x64 instructions
-        if self.current_arch in ['x86', 'x64']:
-            if instruction == 'nop':
-                return b'\x90'
-            elif instruction.startswith('mov eax,'):
-                # mov eax, imm32
-                try:
-                    val = int(instruction.split(',')[1].strip(), 0)
-                    return b'\xb8' + val.to_bytes(4, 'little')
-                except:
-                    pass
-            elif instruction.startswith('inc eax'):
-                return b'\x40'
-            elif instruction.startswith('dec eax'):
-                return b'\x48'
-        
-        console.print("[yellow]Warning: Using NOP for unsupported instruction[/yellow]")
-        return b'\x90'  # Default to NOP
+            console.print("[yellow]Warning: Using NOP for unsupported instruction[/yellow]")
+            encoding, count = ks.asm('nop')
+            if encoding:
+                return bytes(encoding)
+        # all else fails
+        console.print("[red]Warning: instruction didn't work and neither did NOP[/red]")
+        return b'\x00\x00\x00\x00'
+
+
 
     def _get_ip_register(self) -> int:
         """Get the instruction pointer register for current architecture"""
