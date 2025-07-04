@@ -51,6 +51,8 @@ class ArchConfig:
     ks_arch: int
     ks_mode: int
     registers: Dict[str, int]
+    instruction_pointer_register: int
+    stack_pointer_register: int
     stack_base: int
     code_base: int
     data_base: int
@@ -77,6 +79,8 @@ class AssemblyREPL:
                 'al': UC_X86_REG_AL, 'bl': UC_X86_REG_BL, 'cl': UC_X86_REG_CL, 'dl': UC_X86_REG_DL,
                 'ah': UC_X86_REG_AH, 'bh': UC_X86_REG_BH, 'ch': UC_X86_REG_CH, 'dh': UC_X86_REG_DH,
             },
+            instruction_pointer_register=UC_X86_REG_EIP,
+            stack_pointer_register=UC_X86_REG_ESP,
             stack_base=0x7fff0000,
             code_base=0x400000,
             data_base=0x10000000,
@@ -98,6 +102,8 @@ class AssemblyREPL:
                 'r12': UC_X86_REG_R12, 'r13': UC_X86_REG_R13, 'r14': UC_X86_REG_R14, 'r15': UC_X86_REG_R15,
                 'eax': UC_X86_REG_EAX, 'ebx': UC_X86_REG_EBX, 'ecx': UC_X86_REG_ECX, 'edx': UC_X86_REG_EDX,
             },
+            instruction_pointer_register=UC_X86_REG_RIP,
+            stack_pointer_register=UC_X86_REG_RSP,
             stack_base=0x7fff00000000,
             code_base=0x400000,
             data_base=0x10000000,
@@ -118,6 +124,8 @@ class AssemblyREPL:
                 'r12': UC_ARM_REG_R12, 'sp': UC_ARM_REG_SP, 'lr': UC_ARM_REG_LR, 'pc': UC_ARM_REG_PC,
                 'cpsr': UC_ARM_REG_CPSR,
             },
+            instruction_pointer_register=UC_ARM_REG_PC,
+            stack_pointer_register=UC_ARM_REG_SP,
             stack_base=0x7fff0000,
             code_base=0x10000,
             data_base=0x20000000,
@@ -142,6 +150,8 @@ class AssemblyREPL:
                 'x28': UC_ARM64_REG_X28, 'x29': UC_ARM64_REG_X29, 'x30': UC_ARM64_REG_X30, 'sp': UC_ARM64_REG_SP,
                 'pc': UC_ARM64_REG_PC, 'nzcv': UC_ARM64_REG_NZCV,
             },
+            instruction_pointer_register=UC_ARM64_REG_PC,
+            stack_pointer_register=UC_ARM64_REG_SP,
             stack_base=0x7fff00000000,
             code_base=0x400000,
             data_base=0x10000000,
@@ -349,23 +359,10 @@ class AssemblyREPL:
         """Initialize registers with default values"""
         try:
             # Set stack pointer
-            if 'rsp' in self.arch_config.registers:
-                self.uc.reg_write(self.arch_config.registers['rsp'], 
-                                self.arch_config.stack_base + 0x80000)
-            elif 'esp' in self.arch_config.registers:
-                self.uc.reg_write(self.arch_config.registers['esp'], 
-                                self.arch_config.stack_base + 0x80000)
-            elif 'sp' in self.arch_config.registers:
-                self.uc.reg_write(self.arch_config.registers['sp'], 
-                                self.arch_config.stack_base + 0x80000)
+            self.uc.reg_write(self.arch_config.stack_pointer_register, self.arch_config.stack_base + 0x80000)
             
             # Set instruction pointer
-            if 'rip' in self.arch_config.registers:
-                self.uc.reg_write(self.arch_config.registers['rip'], self.arch_config.code_base)
-            elif 'eip' in self.arch_config.registers:
-                self.uc.reg_write(self.arch_config.registers['eip'], self.arch_config.code_base)
-            elif 'pc' in self.arch_config.registers:
-                self.uc.reg_write(self.arch_config.registers['pc'], self.arch_config.code_base)
+            self.uc.reg_write(self.arch_config.instruction_pointer_register, self.arch_config.code_base)
                 
         except Exception as e:
             console.print(f"[red]Error initializing registers: {e}[/red]")
@@ -544,13 +541,7 @@ class AssemblyREPL:
             
         try:
             # Get stack pointer
-            sp_reg = None
-            if 'rsp' in self.arch_config.registers:
-                sp_reg = self.arch_config.registers['rsp']
-            elif 'esp' in self.arch_config.registers:
-                sp_reg = self.arch_config.registers['esp']
-            elif 'sp' in self.arch_config.registers:
-                sp_reg = self.arch_config.registers['sp']
+            sp_reg = self.arch_config.stack_pointer_register
             
             if not sp_reg:
                 console.print("[red]No stack pointer register found[/red]")
@@ -664,7 +655,7 @@ class AssemblyREPL:
         
         # Capture stack values
         try:
-            sp_reg = self._get_stack_pointer_reg()
+            sp_reg = self.arch_config.stack_pointer_register
             if sp_reg:
                 sp_value = self.uc.reg_read(sp_reg)
                 # Capture first 8 stack entries
@@ -680,16 +671,6 @@ class AssemblyREPL:
             pass
         
         return state
-    
-    def _get_stack_pointer_reg(self):
-        """Get the stack pointer register for current architecture"""
-        if 'rsp' in self.arch_config.registers:
-            return self.arch_config.registers['rsp']
-        elif 'esp' in self.arch_config.registers:
-            return self.arch_config.registers['esp']
-        elif 'sp' in self.arch_config.registers:
-            return self.arch_config.registers['sp']
-        return None
     
     def _get_state_changes(self, previous_state):
         """Compare current state with previous state and return changes"""
@@ -719,7 +700,7 @@ class AssemblyREPL:
         """Display code disassembly around current instruction pointer"""
         try:
             # Get current instruction pointer
-            ip_reg = self._get_ip_register()
+            ip_reg = self.arch_config.instruction_pointer_register
             current_ip = self.uc.reg_read(ip_reg)
             
             # Try to find previous instructions by scanning backwards
@@ -919,7 +900,7 @@ class AssemblyREPL:
             self.uc.mem_write(temp_addr, machine_code)
             
             # Save current instruction pointer
-            ip_reg = self._get_ip_register()
+            ip_reg = self.arch_config.instruction_pointer_register
             original_ip = self.uc.reg_read(ip_reg)
             
             # Execute from temporary location
@@ -945,7 +926,7 @@ class AssemblyREPL:
         """Execute instruction from memory (normal mode)"""
         try:
             # Get current instruction pointer
-            ip_reg = self._get_ip_register()
+            ip_reg = self.arch_config.instruction_pointer_register
             current_ip = self.uc.reg_read(ip_reg)
             
             # Write machine code to memory
@@ -984,19 +965,6 @@ class AssemblyREPL:
         # all else fails
         console.print("[red]Warning: instruction didn't work and neither did NOP[/red]")
         return b'\x00\x00\x00\x00'
-
-
-
-    def _get_ip_register(self) -> int:
-        """Get the instruction pointer register for current architecture"""
-        if 'rip' in self.arch_config.registers:
-            return self.arch_config.registers['rip']
-        elif 'eip' in self.arch_config.registers:
-            return self.arch_config.registers['eip']
-        elif 'pc' in self.arch_config.registers:
-            return self.arch_config.registers['pc']
-        else:
-            raise Exception("No instruction pointer register found")
 
     def disassemble(self, address: int, count: int = 10):
         """Disassemble instructions at given address"""
@@ -1190,7 +1158,7 @@ class AssemblyREPL:
                 self.uc.mem_write(address, total_code)
                 
                 # Set instruction pointer to start of loaded code
-                ip_reg = self._get_ip_register()
+                ip_reg = self.arch_config.instruction_pointer_register
                 self.uc.reg_write(ip_reg, address)
                 
                 console.print(f"[green]Loaded {instruction_count} instructions ({len(total_code)} bytes) at 0x{address:x}[/green]")
@@ -1220,7 +1188,7 @@ class AssemblyREPL:
             self.uc.mem_write(address, data)
             
             # Set instruction pointer to start of loaded binary
-            ip_reg = self._get_ip_register()
+            ip_reg = self.arch_config.instruction_pointer_register
             self.uc.reg_write(ip_reg, address)
             
             console.print(f"[green]Loaded binary file: {filename}[/green]")
@@ -1337,7 +1305,7 @@ class AssemblyREPL:
                 
                 elif command == 'disasm':
                     if len(parts) < 2:
-                        ip_reg = self._get_ip_register()
+                        ip_reg = self.arch_config.instruction_pointer_register
                         addr = self.uc.reg_read(ip_reg)
                     else:
                         addr = self.parse_value(parts[1])
@@ -1396,7 +1364,7 @@ class AssemblyREPL:
                 
                 elif command == 'step':
                     try:
-                        ip_reg = self._get_ip_register()
+                        ip_reg = self.arch_config.instruction_pointer_register
                         current_ip = self.uc.reg_read(ip_reg)
                         
                         # Read instruction at current IP
@@ -1415,7 +1383,7 @@ class AssemblyREPL:
                 elif command == 'run':
                     count = self.parse_value(parts[1]) if len(parts) > 1 else 10
                     try:
-                        ip_reg = self._get_ip_register()
+                        ip_reg = self.arch_config.instruction_pointer_register
                         for i in range(count):
                             current_ip = self.uc.reg_read(ip_reg)
                             
