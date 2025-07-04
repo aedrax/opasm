@@ -8,7 +8,7 @@ A comprehensive assembly language REPL (Read-Eval-Print Loop) with professional 
 ### **Interactive Assembly Development**
 - **Direct Assembly Mode**: Type instructions without "asm" prefix - just `mov rax, 0x1234`
 - **Real-time Execution**: Execute assembly instantly with immediate visual feedback
-- **Multi-Architecture Support**: x86, x64, ARM, ARM64 with runtime switching
+- **Multi-Architecture Support**: x86, x64, ARM, ARM64, MIPS32, MIPS64 with runtime switching
 - **Context-Aware Autocompletion**: Smart tab completion for instructions, registers, and commands
 
 ### **Professional Debugging Interface**
@@ -137,7 +137,7 @@ Executed: mov rbx, 0x5678             # Note: RIP advances
 ### **Architecture & Setup**
 ```bash
 arch                    # Show current architecture
-arch x64                # Switch to x64/x86/arm/arm64
+arch x64                # Switch to x64/x86/arm/arm64/mips/mips64
 reset                   # Reset CPU state and clear memory
 toggle_display          # Enable/disable automatic display
 ```
@@ -208,6 +208,14 @@ dump_mem <file> <addr> <size>  # Export memory region
 ### **ARM64 (64-bit)**
 - **Registers**: X0-X30, SP, PC, NZCV  
 - **Instructions**: AArch64 instruction set
+
+### **MIPS (32-bit)**
+- **Registers**: zero, at, v0-v1, a0-a3, t0-t9, s0-s7, k0-k1, gp, sp, fp, ra, pc
+- **Instructions**: Full MIPS32 instruction set via Keystone
+
+### **MIPS64 (64-bit)**
+- **Registers**: zero, at, v0-v1, a0-a3, t0-t3, s0-s3, gp, sp, fp, ra, pc
+- **Instructions**: Full MIPS64 instruction set via Keystone
 
 ## Responsive Interface
 
@@ -290,7 +298,7 @@ asm-repl:x64> save my_analysis.json
 ## Contributing
 
 Enhancement opportunities:
-- Additional architectures (MIPS, RISC-V, PowerPC)
+- Additional architectures (RISC-V, PowerPC)
 - Scripting and automation support
 - Network analysis capabilities
 - Integration with external debuggers

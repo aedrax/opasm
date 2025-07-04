@@ -157,6 +157,108 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=8
         ),
+        'mips32': ArchConfig(
+            name='mips32',
+            uc_arch=UC_ARCH_MIPS,
+            uc_mode=UC_MODE_MIPS32 + UC_MODE_BIG_ENDIAN,
+            cs_arch=CS_ARCH_MIPS,
+            cs_mode=CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN,
+            ks_arch=KS_ARCH_MIPS,
+            ks_mode=KS_MODE_MIPS32 + KS_MODE_BIG_ENDIAN,
+            registers={
+                'r0 (zero)': UC_MIPS_REG_ZERO,
+                'r1 (at)': UC_MIPS_REG_AT,
+                'r2 (v0)': UC_MIPS_REG_V0,
+                'r3 (v1)': UC_MIPS_REG_V1,
+                'r4 (a0)': UC_MIPS_REG_A0,
+                'r5 (a1)': UC_MIPS_REG_A1,
+                'r6 (a2)': UC_MIPS_REG_A2,
+                'r7 (a3)': UC_MIPS_REG_A3,
+                'r8 (t0)': UC_MIPS_REG_T0,
+                'r9 (t1)': UC_MIPS_REG_T1,
+                'r10 (t2)': UC_MIPS_REG_T2,
+                'r11 (t3)': UC_MIPS_REG_T3,
+                'r12 (t4)': UC_MIPS_REG_T4,
+                'r13 (t5)': UC_MIPS_REG_T5,
+                'r14 (t6)': UC_MIPS_REG_T6,
+                'r15 (t7)': UC_MIPS_REG_T7,
+                'r16 (s0)': UC_MIPS_REG_S0,
+                'r17 (s1)': UC_MIPS_REG_S1,
+                'r18 (s2)': UC_MIPS_REG_S2,
+                'r19 (s3)': UC_MIPS_REG_S3,
+                'r20 (s4)': UC_MIPS_REG_S4,
+                'r21 (s5)': UC_MIPS_REG_S5,
+                'r22 (s6)': UC_MIPS_REG_S6,
+                'r23 (s7)': UC_MIPS_REG_S7,
+                'r24 (t8)': UC_MIPS_REG_T8,
+                'r25 (t9)': UC_MIPS_REG_T9,
+                'r26 (k0)': UC_MIPS_REG_K0,
+                'r27 (k1)': UC_MIPS_REG_K1,
+                'r28 (gp)': UC_MIPS_REG_GP,
+                'r29 (sp)': UC_MIPS_REG_SP,
+                'r30 (fp)': UC_MIPS_REG_FP,
+                'r31 (ra)': UC_MIPS_REG_RA,
+                'pc': UC_MIPS_REG_PC,
+                'sp': UC_MIPS_REG_SP,
+            },
+            instruction_pointer_register=UC_MIPS_REG_PC,
+            stack_pointer_register=UC_MIPS_REG_SP,
+            stack_base=0x7fff0000,
+            code_base=0x400000,
+            data_base=0x10000000,
+            word_size=4
+        ),
+        'mips64': ArchConfig(
+            name='mips64',
+            uc_arch=UC_ARCH_MIPS,
+            uc_mode=UC_MODE_MIPS64 + UC_MODE_BIG_ENDIAN,
+            cs_arch=CS_ARCH_MIPS,
+            cs_mode=CS_MODE_MIPS64 + CS_MODE_BIG_ENDIAN,
+            ks_arch=KS_ARCH_MIPS,
+            ks_mode=KS_MODE_MIPS64 + KS_MODE_BIG_ENDIAN,
+            registers={
+                'r0 (zero)': UC_MIPS_REG_ZERO,
+                'r1 (at)': UC_MIPS_REG_AT,
+                'r2 (v0)': UC_MIPS_REG_V0,
+                'r3 (v1)': UC_MIPS_REG_V1,
+                'r4 (a0)': UC_MIPS_REG_A0,
+                'r5 (a1)': UC_MIPS_REG_A1,
+                'r6 (a2)': UC_MIPS_REG_A2,
+                'r7 (a3)': UC_MIPS_REG_A3,
+                'r8 (t0)': UC_MIPS_REG_T0,
+                'r9 (t1)': UC_MIPS_REG_T1,
+                'r10 (t2)': UC_MIPS_REG_T2,
+                'r11 (t3)': UC_MIPS_REG_T3,
+                'r12 (t4)': UC_MIPS_REG_T4,
+                'r13 (t5)': UC_MIPS_REG_T5,
+                'r14 (t6)': UC_MIPS_REG_T6,
+                'r15 (t7)': UC_MIPS_REG_T7,
+                'r16 (s0)': UC_MIPS_REG_S0,
+                'r17 (s1)': UC_MIPS_REG_S1,
+                'r18 (s2)': UC_MIPS_REG_S2,
+                'r19 (s3)': UC_MIPS_REG_S3,
+                'r20 (s4)': UC_MIPS_REG_S4,
+                'r21 (s5)': UC_MIPS_REG_S5,
+                'r22 (s6)': UC_MIPS_REG_S6,
+                'r23 (s7)': UC_MIPS_REG_S7,
+                'r24 (t8)': UC_MIPS_REG_T8,
+                'r25 (t9)': UC_MIPS_REG_T9,
+                'r26 (k0)': UC_MIPS_REG_K0,
+                'r27 (k1)': UC_MIPS_REG_K1,
+                'r28 (gp)': UC_MIPS_REG_GP,
+                'r29 (sp)': UC_MIPS_REG_SP,
+                'r30 (fp)': UC_MIPS_REG_FP,
+                'r31 (ra)': UC_MIPS_REG_RA,
+                'pc': UC_MIPS_REG_PC,
+                'sp': UC_MIPS_REG_SP,
+            },
+            instruction_pointer_register=UC_MIPS_REG_PC,
+            stack_pointer_register=UC_MIPS_REG_SP,
+            stack_base=0x7fff00000000,
+            code_base=0x400000,
+            data_base=0x10000000,
+            word_size=8
+        ),
     }
 
     def __init__(self):
@@ -302,6 +404,26 @@ class AssemblyREPL:
                 # Other
                 'nop', 'svc', 'mrs', 'msr',
             ]
+        elif self.current_arch in ['mips32', 'mips64']:
+            return [
+                # Data movement
+                'move', 'li', 'la',
+                # Load/Store
+                'lw', 'lh', 'lb', 'sw', 'sh', 'sb', 'lui',
+                # Arithmetic
+                'add', 'addu', 'addi', 'addiu', 'sub', 'subu',
+                'mul', 'mult', 'multu', 'div', 'divu',
+                # Logical
+                'and', 'andi', 'or', 'ori', 'xor', 'xori', 'nor',
+                'sll', 'srl', 'sra', 'sllv', 'srlv', 'srav',
+                # Comparison
+                'slt', 'slti', 'sltu', 'sltiu',
+                # Control flow
+                'j', 'jal', 'jr', 'jalr',
+                'beq', 'bne', 'bgtz', 'bltz', 'bgez', 'blez',
+                # Other
+                'nop', 'syscall', 'break',
+            ]
         else:
             return []
 
@@ -385,7 +507,7 @@ class AssemblyREPL:
             """[bold cyan]Available Commands:[/bold cyan]
 
 [bold green]Architecture & Setup:[/bold green]
-  arch <name>            - Show current arch or switch to: x86, x64, arm, arm64
+  arch <name>            - Show current arch or switch to: x86, x64, arm, arm64, mips, mips64
   reset                  - Reset CPU state and clear memory
 
 [bold green]Assembly & Execution:[/bold green]
