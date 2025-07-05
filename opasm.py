@@ -17,6 +17,7 @@ try:
     from unicorn.arm_const import *
     from unicorn.arm64_const import *
     from unicorn.mips_const import *
+    from unicorn.ppc_const import *
     import capstone
     from capstone import *
     import keystone
@@ -259,6 +260,178 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=8
         ),
+        'ppc32': ArchConfig(
+            name='ppc32',
+            uc_arch=UC_ARCH_PPC,
+            uc_mode=UC_MODE_PPC32 + UC_MODE_BIG_ENDIAN,
+            cs_arch=CS_ARCH_PPC,
+            cs_mode=CS_MODE_32 + CS_MODE_BIG_ENDIAN,
+            ks_arch=KS_ARCH_PPC,
+            ks_mode=KS_MODE_PPC32 + KS_MODE_BIG_ENDIAN,
+            registers = {
+                "r0": UC_PPC_REG_0,
+                "r1": UC_PPC_REG_1,
+                "r2": UC_PPC_REG_2,
+                "r3": UC_PPC_REG_3,
+                "r4": UC_PPC_REG_4,
+                "r5": UC_PPC_REG_5,
+                "r6": UC_PPC_REG_6,
+                "r7": UC_PPC_REG_7,
+                "r8": UC_PPC_REG_8,
+                "r9": UC_PPC_REG_9,
+                "r10": UC_PPC_REG_10,
+                "r11": UC_PPC_REG_11,
+                "r12": UC_PPC_REG_12,
+                "r13": UC_PPC_REG_13,
+                "r14": UC_PPC_REG_14,
+                "r15": UC_PPC_REG_15,
+                "r16": UC_PPC_REG_16,
+                "r17": UC_PPC_REG_17,
+                "r18": UC_PPC_REG_18,
+                "r19": UC_PPC_REG_19,
+                "r20": UC_PPC_REG_20,
+                "r21": UC_PPC_REG_21,
+                "r22": UC_PPC_REG_22,
+                "r23": UC_PPC_REG_23,
+                "r24": UC_PPC_REG_24,
+                "r25": UC_PPC_REG_25,
+                "r26": UC_PPC_REG_26,
+                "r27": UC_PPC_REG_27,
+                "r28": UC_PPC_REG_28,
+                "r29": UC_PPC_REG_29,
+                "r30": UC_PPC_REG_30,
+                "r31": UC_PPC_REG_31,
+                "fpr0": UC_PPC_REG_FPR0,
+                "fpr1": UC_PPC_REG_FPR1,
+                "fpr2": UC_PPC_REG_FPR2,
+                "fpr3": UC_PPC_REG_FPR3,
+                "fpr4": UC_PPC_REG_FPR4,
+                "fpr5": UC_PPC_REG_FPR5,
+                "fpr6": UC_PPC_REG_FPR6,
+                "fpr7": UC_PPC_REG_FPR7,
+                "fpr8": UC_PPC_REG_FPR8,
+                "fpr9": UC_PPC_REG_FPR9,
+                "fpr10": UC_PPC_REG_FPR10,
+                "fpr11": UC_PPC_REG_FPR11,
+                "fpr12": UC_PPC_REG_FPR12,
+                "fpr13": UC_PPC_REG_FPR13,
+                "fpr14": UC_PPC_REG_FPR14,
+                "fpr15": UC_PPC_REG_FPR15,
+                "fpr16": UC_PPC_REG_FPR16,
+                "fpr17": UC_PPC_REG_FPR17,
+                "fpr18": UC_PPC_REG_FPR18,
+                "fpr19": UC_PPC_REG_FPR19,
+                "fpr20": UC_PPC_REG_FPR20,
+                "fpr21": UC_PPC_REG_FPR21,
+                "fpr22": UC_PPC_REG_FPR22,
+                "fpr23": UC_PPC_REG_FPR23,
+                "fpr24": UC_PPC_REG_FPR24,
+                "fpr25": UC_PPC_REG_FPR25,
+                "fpr26": UC_PPC_REG_FPR26,
+                "fpr27": UC_PPC_REG_FPR27,
+                "fpr28": UC_PPC_REG_FPR28,
+                "fpr29": UC_PPC_REG_FPR29,
+                "fpr30": UC_PPC_REG_FPR30,
+                "fpr31": UC_PPC_REG_FPR31,
+                "pc": UC_PPC_REG_PC,
+                "lr": UC_PPC_REG_LR,
+                "ctr": UC_PPC_REG_CTR,
+                "xer": UC_PPC_REG_XER,
+                "cr": UC_PPC_REG_CR,
+            },
+            instruction_pointer_register=UC_PPC_REG_PC,
+            stack_pointer_register=UC_PPC_REG_1,
+            stack_base=0x7fff0000,
+            code_base=0x10000000,
+            data_base=0x20000000,
+            word_size=4
+        ),
+        'ppc64': ArchConfig(
+            name='ppc64',
+            uc_arch=UC_ARCH_PPC,
+            uc_mode=UC_MODE_PPC64 + UC_MODE_BIG_ENDIAN,
+            cs_arch=CS_ARCH_PPC,
+            cs_mode=CS_MODE_64 + CS_MODE_BIG_ENDIAN,
+            ks_arch=KS_ARCH_PPC,
+            ks_mode=KS_MODE_PPC64 + KS_MODE_BIG_ENDIAN,
+            registers = {
+                "r0": UC_PPC_REG_0,
+                "r1": UC_PPC_REG_1,
+                "r2": UC_PPC_REG_2,
+                "r3": UC_PPC_REG_3,
+                "r4": UC_PPC_REG_4,
+                "r5": UC_PPC_REG_5,
+                "r6": UC_PPC_REG_6,
+                "r7": UC_PPC_REG_7,
+                "r8": UC_PPC_REG_8,
+                "r9": UC_PPC_REG_9,
+                "r10": UC_PPC_REG_10,
+                "r11": UC_PPC_REG_11,
+                "r12": UC_PPC_REG_12,
+                "r13": UC_PPC_REG_13,
+                "r14": UC_PPC_REG_14,
+                "r15": UC_PPC_REG_15,
+                "r16": UC_PPC_REG_16,
+                "r17": UC_PPC_REG_17,
+                "r18": UC_PPC_REG_18,
+                "r19": UC_PPC_REG_19,
+                "r20": UC_PPC_REG_20,
+                "r21": UC_PPC_REG_21,
+                "r22": UC_PPC_REG_22,
+                "r23": UC_PPC_REG_23,
+                "r24": UC_PPC_REG_24,
+                "r25": UC_PPC_REG_25,
+                "r26": UC_PPC_REG_26,
+                "r27": UC_PPC_REG_27,
+                "r28": UC_PPC_REG_28,
+                "r29": UC_PPC_REG_29,
+                "r30": UC_PPC_REG_30,
+                "r31": UC_PPC_REG_31,
+                "fpr0": UC_PPC_REG_FPR0,
+                "fpr1": UC_PPC_REG_FPR1,
+                "fpr2": UC_PPC_REG_FPR2,
+                "fpr3": UC_PPC_REG_FPR3,
+                "fpr4": UC_PPC_REG_FPR4,
+                "fpr5": UC_PPC_REG_FPR5,
+                "fpr6": UC_PPC_REG_FPR6,
+                "fpr7": UC_PPC_REG_FPR7,
+                "fpr8": UC_PPC_REG_FPR8,
+                "fpr9": UC_PPC_REG_FPR9,
+                "fpr10": UC_PPC_REG_FPR10,
+                "fpr11": UC_PPC_REG_FPR11,
+                "fpr12": UC_PPC_REG_FPR12,
+                "fpr13": UC_PPC_REG_FPR13,
+                "fpr14": UC_PPC_REG_FPR14,
+                "fpr15": UC_PPC_REG_FPR15,
+                "fpr16": UC_PPC_REG_FPR16,
+                "fpr17": UC_PPC_REG_FPR17,
+                "fpr18": UC_PPC_REG_FPR18,
+                "fpr19": UC_PPC_REG_FPR19,
+                "fpr20": UC_PPC_REG_FPR20,
+                "fpr21": UC_PPC_REG_FPR21,
+                "fpr22": UC_PPC_REG_FPR22,
+                "fpr23": UC_PPC_REG_FPR23,
+                "fpr24": UC_PPC_REG_FPR24,
+                "fpr25": UC_PPC_REG_FPR25,
+                "fpr26": UC_PPC_REG_FPR26,
+                "fpr27": UC_PPC_REG_FPR27,
+                "fpr28": UC_PPC_REG_FPR28,
+                "fpr29": UC_PPC_REG_FPR29,
+                "fpr30": UC_PPC_REG_FPR30,
+                "fpr31": UC_PPC_REG_FPR31,
+                "pc": UC_PPC_REG_PC,
+                "lr": UC_PPC_REG_LR,
+                "ctr": UC_PPC_REG_CTR,
+                "xer": UC_PPC_REG_XER,
+                "cr": UC_PPC_REG_CR,
+            },
+            instruction_pointer_register=UC_PPC_REG_PC,
+            stack_pointer_register=UC_PPC_REG_1,
+            stack_base=0x7fff00000000,
+            code_base=0x10000000,
+            data_base=0x20000000,
+            word_size=8
+        ),
     }
 
     def __init__(self):
@@ -424,6 +597,25 @@ class AssemblyREPL:
                 # Other
                 'nop', 'syscall', 'break',
             ]
+        elif self.current_arch in ['ppc32', 'ppc64']:
+            return [
+                # Data movement
+                'li', 'lis', 'la', 'mr',
+                # Load/Store
+                'lwz', 'lwzu', 'lwzx', 'lhz', 'lha', 'lbz', 'stw', 'stwu', 'stwx', 'sth', 'stb',
+                'ld', 'ldu', 'ldx', 'std', 'stdu', 'stdx',
+                # Arithmetic
+                'add', 'addi', 'addis', 'subf', 'subfic', 'mulld', 'mullw', 'divd', 'divw',
+                # Logical
+                'and', 'andi.', 'andis.', 'or', 'ori', 'oris', 'xor', 'xori', 'xoris',
+                'sld', 'slw', 'srd', 'srw', 'srad', 'sraw',
+                # Comparison
+                'cmpd', 'cmpw', 'cmpi', 'cmpl', 'cmpli',
+                # Control flow
+                'b', 'bl', 'bctr', 'bctrl', 'blr', 'beq', 'bne', 'blt', 'bgt', 'ble', 'bge',
+                # Other
+                'nop', 'sc', 'sync', 'isync',
+            ]
         else:
             return []
 
@@ -507,7 +699,7 @@ class AssemblyREPL:
             """[bold cyan]Available Commands:[/bold cyan]
 
 [bold green]Architecture & Setup:[/bold green]
-  arch <name>            - Show current arch or switch to: x86, x64, arm, arm64, mips, mips64
+  arch <name>            - Show current arch or switch to: x86, x64, arm, arm64, mips, mips64, ppc32, ppc64
   reset                  - Reset CPU state and clear memory
 
 [bold green]Assembly & Execution:[/bold green]
