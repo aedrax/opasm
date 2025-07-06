@@ -41,6 +41,18 @@ except ImportError as e:
 # Initialize rich console
 console = Console()
 
+def print_info(message: str):
+    """Print informational messages in green"""
+    console.print(f"[green]{message}[/green]")
+
+def print_error(message: str):
+    """Print error messages in red"""
+    console.print(f"[red]error: {message}[/red]")
+
+def print_warning(message: str):
+    """Print warning messages in yellow"""
+    console.print(f"[yellow]warning: {message}[/yellow]")
+
 @dataclass
 class ArchConfig:
     """Configuration for different architectures"""
@@ -687,10 +699,10 @@ class AssemblyREPL:
             # Initialize stack and instruction pointers
             self._init_registers()
             
-            console.print(f"[green]Initialized {self.arch_config.name} architecture[/green]")
+            print_info(f"Initialized {self.arch_config.name} architecture")
             
         except Exception as e:
-            console.print(f"[red]Error initializing engines: {e}[/red]")
+            print_error(f"Error initializing engines: {e}")
             sys.exit(1)
 
     def _map_memory_regions(self):
@@ -706,7 +718,7 @@ class AssemblyREPL:
                 self.uc.mem_map(base, size)
                 self.memory_regions[name] = (base, size)
             except Exception as e:
-                console.print(f"[red]Error mapping {name} memory: {e}[/red]")
+                print_error(f"Error mapping {name} memory: {e}")
 
     def _init_registers(self):
         """Initialize registers with default values"""
@@ -718,7 +730,7 @@ class AssemblyREPL:
             self.uc.reg_write(self.arch_config.instruction_pointer_register, self.arch_config.code_base)
                 
         except Exception as e:
-            console.print(f"[red]Error initializing registers: {e}[/red]")
+            print_error(f"Error initializing registers: {e}")
 
     def print_banner(self):
         """Print welcome banner using rich"""
@@ -898,7 +910,7 @@ class AssemblyREPL:
             sp_reg = self.arch_config.stack_pointer_register
             
             if not sp_reg:
-                console.print("[red]No stack pointer register found[/red]")
+                print_warning("No stack pointer register found")
                 return
             
             sp_value = self.uc.reg_read(sp_reg)
@@ -962,9 +974,9 @@ class AssemblyREPL:
                 
         except Exception as e:
             if compact:
-                console.print(f"[red]Stack unavailable[/red]")
+                print_error(f"Stack unavailable")
             else:
-                console.print(f"[red]Error reading stack: {e}[/red]")
+                print_error(f"Error reading stack: {e}")
 
     def _check_screen_size(self) -> tuple[int, int]:
         """Check terminal size and determine what can be displayed"""
@@ -1131,9 +1143,9 @@ class AssemblyREPL:
                 
         except Exception as e:
             if compact:
-                console.print(f"[red]Code unavailable[/red]")
+                print_error(f"Code unavailable")
             else:
-                console.print(f"[red]Error reading code: {e}[/red]")
+                print_error(f"Error reading code: {e}")
 
     def _display_auto_panels(self):
         """Display automatic register, stack, and code panels if screen is large enough"""
@@ -1213,17 +1225,17 @@ class AssemblyREPL:
                 
         except Exception as e:
             if "UC_ERR_READ_UNMAPPED" in str(e):
-                console.print(f"[red]Address 0x{address:x} is not mapped in memory[/red]")
-                console.print("[yellow]Use 'regions' to see mapped memory regions[/yellow]")
+                print_error(f"Address 0x{address:x} is not mapped in memory")
+                print_warning("Use 'regions' to see mapped memory regions")
             else:
-                console.print(f"[red]Error reading memory: {e}[/red]")
+                print_error(f"Error reading memory: {e}")
 
     def assemble_and_execute(self, instruction: str):
         """Assemble instruction and execute it"""
         try:
             machine_code = self._simple_assemble(instruction)
             if not machine_code:
-                console.print("[red]Failed to assemble instruction[/red]")
+                print_error("Failed to assemble instruction")
                 return
             
             if self.direct_execution:
@@ -1234,7 +1246,7 @@ class AssemblyREPL:
                 self._execute_from_memory(instruction, machine_code)
             
         except Exception as e:
-            console.print(f"[red]Error executing instruction: {e}[/red]")
+            print_error(f"Error executing instruction: {e}")
 
     def _execute_direct(self, instruction: str, machine_code: bytes):
         """Execute instruction directly without loading into memory first"""
@@ -1271,10 +1283,10 @@ class AssemblyREPL:
                 'direct_execution': True
             })
             
-            console.print(f"[green]Executed (direct): {instruction}[/green]")
+            print_info(f"Executed (direct): {instruction}")
             
         except Exception as e:
-            console.print(f"[red]Error in direct execution: {e}[/red]")
+            print_error(f"Error in direct execution: {e}")
 
     def _execute_from_memory(self, instruction: str, machine_code: bytes):
         """Execute instruction from memory (normal mode)"""
@@ -1297,10 +1309,10 @@ class AssemblyREPL:
                 'direct_execution': False
             })
             
-            console.print(f"[green]Executed: {instruction}[/green]")
+            print_info(f"Executed: {instruction}")
             
         except Exception as e:
-            console.print(f"[red]Error in memory execution: {e}[/red]")
+            print_error(f"Error in memory execution: {e}")
 
     def _simple_assemble(self, instruction: str) -> bytes:
         """Assemble instruction using keystone-engine"""
@@ -1311,13 +1323,13 @@ class AssemblyREPL:
             if encoding:
                 return bytes(encoding)
         except Exception as e:
-            console.print(f"[yellow]Keystone assembly failed: {e}[/yellow]")
-            console.print("[yellow]Warning: Using NOP for unsupported instruction[/yellow]")
+            print_warning(f"Keystone assembly failed: {e}")
+            print_warning("Using NOP for unsupported instruction")
             encoding, count = ks.asm('nop')
             if encoding:
                 return bytes(encoding)
         # all else fails
-        console.print("[red]Warning: instruction didn't work and neither did NOP[/red]")
+        print_error("instruction didn't work and neither did NOP")
         return b'\x00\x00\x00\x00'
 
     def disassemble(self, address: int, count: int = 10):
@@ -1338,7 +1350,7 @@ class AssemblyREPL:
             console.print(table)
                 
         except Exception as e:
-            console.print(f"[red]Error disassembling: {e}[/red]")
+            print_error(f"Error disassembling: {e}")
 
     def set_register(self, reg_name: str, value: int):
         """Set register value"""
@@ -1346,20 +1358,20 @@ class AssemblyREPL:
         if reg_name in self.arch_config.registers:
             try:
                 self.uc.reg_write(self.arch_config.registers[reg_name], value)
-                console.print(f"[green]Set {reg_name.upper()} = 0x{value:x}[/green]")
+                print_info(f"Set {reg_name.upper()} = 0x{value:x}")
             except Exception as e:
-                console.print(f"[red]Error setting register: {e}[/red]")
+                print_error(f"Error setting register: {e}")
         else:
-            console.print(f"[red]Unknown register: {reg_name}[/red]")
+            print_error(f"Unknown register: {reg_name}")
 
     def set_memory(self, address: int, value: int, size: int = 4):
         """Set memory value"""
         try:
             data = value.to_bytes(size, 'little')
             self.uc.mem_write(address, data)
-            console.print(f"[green]Set memory[0x{address:x}] = 0x{value:x}[/green]")
+            print_info(f"Set memory[0x{address:x}] = 0x{value:x}")
         except Exception as e:
-            console.print(f"[red]Error setting memory: {e}[/red]")
+            print_error(f"Error setting memory: {e}")
 
     def save_state(self, filename: str):
         """Save current CPU state to file"""
@@ -1394,10 +1406,10 @@ class AssemblyREPL:
             with open(filename, 'w') as f:
                 json.dump(state, f, indent=2)
             
-            console.print(f"[green]State saved to {filename}[/green]")
+            print_info(f"State saved to {filename}")
             
         except Exception as e:
-            console.print(f"[red]Error saving state: {e}[/red]")
+            print_error(f"Error saving state: {e}")
 
     def load_state(self, filename: str):
         """Load CPU state from file"""
@@ -1424,10 +1436,10 @@ class AssemblyREPL:
             self.code_history = state.get('code_history', [])
             self.breakpoints = set(state.get('breakpoints', []))
             
-            console.print(f"[green]State loaded from {filename}[/green]")
+            print_info(f"State loaded from {filename}")
             
         except Exception as e:
-            console.print(f"[red]Error loading state: {e}[/red]")
+            print_error(f"Error loading state: {e}")
 
     def dump_assembly(self, filename: str):
         """Dump assembly history to file"""
@@ -1441,10 +1453,10 @@ class AssemblyREPL:
                     f.write(f"; Machine Code: {entry['machine_code']}\n")
                     f.write(f"{entry['instruction']}\n\n")
             
-            console.print(f"[green]Assembly history dumped to {filename}[/green]")
+            print_info(f"Assembly history dumped to {filename}")
             
         except Exception as e:
-            console.print(f"[red]Error dumping assembly: {e}[/red]")
+            print_error(f"Error dumping assembly: {e}")
 
     def dump_memory(self, filename: str, address: int, size: int):
         """Dump memory region to file"""
@@ -1453,10 +1465,10 @@ class AssemblyREPL:
             with open(filename, 'wb') as f:
                 f.write(data)
             
-            console.print(f"[green]Memory dumped to {filename} (0x{address:x}, {size} bytes)[/green]")
+            print_info(f"Memory dumped to {filename} (0x{address:x}, {size} bytes)")
             
         except Exception as e:
-            console.print(f"[red]Error dumping memory: {e}[/red]")
+            print_error(f"Error dumping memory: {e}")
 
     def load_assembly_file(self, filename: str, address: int = None):
         """Load and assemble assembly file into memory"""
@@ -1502,10 +1514,10 @@ class AssemblyREPL:
                         
                         console.print(f"[dim]  {line_num:3d}: {line} -> {machine_code.hex()}[/dim]")
                     else:
-                        console.print(f"[yellow]  {line_num:3d}: Warning: Could not assemble '{line}'[/yellow]")
+                        print_warning(f"  {line_num:3d}: Could not assemble '{line}'")
                         
                 except Exception as e:
-                    console.print(f"[red]  {line_num:3d}: Error assembling '{line}': {e}[/red]")
+                    print_error(f"  {line_num:3d}: Error assembling '{line}': {e}")
             
             if total_code:
                 # Write all assembled code to memory
@@ -1515,15 +1527,15 @@ class AssemblyREPL:
                 ip_reg = self.arch_config.instruction_pointer_register
                 self.uc.reg_write(ip_reg, address)
                 
-                console.print(f"[green]Loaded {instruction_count} instructions ({len(total_code)} bytes) at 0x{address:x}[/green]")
-                console.print(f"[green]Set instruction pointer to 0x{address:x}[/green]")
+                print_info(f"Loaded {instruction_count} instructions ({len(total_code)} bytes) at 0x{address:x}")
+                print_info(f"Set instruction pointer to 0x{address:x}")
             else:
-                console.print("[yellow]No valid instructions found in file[/yellow]")
+                print_warning("No valid instructions found in file")
                 
         except FileNotFoundError:
-            console.print(f"[red]File not found: {filename}[/red]")
+            print_error(f"File not found: {filename}")
         except Exception as e:
-            console.print(f"[red]Error loading assembly file: {e}[/red]")
+            print_error(f"Error loading assembly file: {e}")
 
     def load_binary_file(self, filename: str, address: int = None):
         """Load binary file into memory"""
@@ -1535,7 +1547,7 @@ class AssemblyREPL:
                 data = f.read()
             
             if not data:
-                console.print("[yellow]Binary file is empty[/yellow]")
+                print_warning("Binary file is empty")
                 return
             
             # Write binary data to memory
@@ -1545,23 +1557,23 @@ class AssemblyREPL:
             ip_reg = self.arch_config.instruction_pointer_register
             self.uc.reg_write(ip_reg, address)
             
-            console.print(f"[green]Loaded binary file: {filename}[/green]")
-            console.print(f"[green]Loaded {len(data)} bytes at 0x{address:x}[/green]")
-            console.print(f"[green]Set instruction pointer to 0x{address:x}[/green]")
+            print_info(f"Loaded binary file: {filename}")
+            print_info(f"Loaded {len(data)} bytes at 0x{address:x}")
+            print_info(f"Set instruction pointer to 0x{address:x}")
             
             # Show disassembly of first few instructions
             console.print("\n[cyan]Disassembly preview:[/cyan]")
             self.disassemble(address, 5)
                 
         except FileNotFoundError:
-            console.print(f"[red]File not found: {filename}[/red]")
+            print_error(f"File not found: {filename}")
         except Exception as e:
-            console.print(f"[red]Error loading binary file: {e}[/red]")
+            print_error(f"Error loading binary file: {e}")
 
     def switch_architecture(self, arch_name: str):
         """Switch to different architecture"""
         if arch_name not in self.ARCHITECTURES:
-            console.print(f"[red]Unknown architecture: {arch_name}[/red]")
+            print_error(f"Unknown architecture: {arch_name}")
             console.print(f"Available: {', '.join(self.ARCHITECTURES.keys())}")
             return
         
@@ -1574,34 +1586,34 @@ class AssemblyREPL:
         # Update completer for new architecture
         self._update_completer()
         
-        console.print(f"[green]Switched to {arch_name.upper()} architecture[/green]")
+        print_info(f"Switched to {arch_name.upper()} architecture")
 
     def set_endian(self, endian_str: str):
         """Set the endianness for the current architecture"""
         endian_str = endian_str.lower()
         if endian_str not in ['little', 'big']:
-            console.print("[red]Invalid endianness. Use 'little' or 'big'.[/red]")
+            print_error("Invalid endianness. Use 'little' or 'big'.")
             return
 
         if self.current_arch.startswith('x86') and endian_str == 'big':
-            console.print("[yellow]x86 architectures are little-endian only.[/yellow]")
+            print_warning("x86 architectures are little-endian only.")
             return
         
         # Check if endianness actually changed
         if self.arch_config.is_little_endian and endian_str == 'little' or \
             not self.arch_config.is_little_endian and endian_str == 'big':
-            console.print(f"[yellow]Endianness is already set to {endian_str}-endian.[/yellow]")
+            print_warning(f"Endianness is already set to {endian_str}-endian.")
             return
         
         self.arch_config.is_little_endian = (endian_str == 'little')
 
-        console.print(f"[green]Switched to {endian_str}-endian.[/green]")
+        print_info(f"Switched to {endian_str}-endian.")
         self.init_engine()
 
     def show_endian(self):
         """Show the current endianness"""
         endian = "Little-endian" if self.arch_config.is_little_endian else "Big-endian"
-        console.print(f"[green]Current endianness: {endian}[/green]")
+        print_info(f"Current endianness: {endian}")
 
     def parse_value(self, value_str: str) -> int:
         """Parse integer value from string (supports hex, decimal, and register dereferencing)"""
@@ -1616,10 +1628,10 @@ class AssemblyREPL:
                     console.print(f"[dim]${reg_name} = 0x{reg_value:x}[/dim]")
                     return reg_value
                 except Exception as e:
-                    console.print(f"[red]Error reading register {reg_name}: {e}[/red]")
+                    print_error(f"Error reading register {reg_name}: {e}")
                     return 0
             else:
-                console.print(f"[red]Unknown register: {reg_name}[/red]")
+                print_error(f"Unknown register: {reg_name}")
                 return 0
         
         # Handle hex values
@@ -1650,7 +1662,7 @@ class AssemblyREPL:
                 
                 # Check if it's a known command first
                 if command in ['quit', 'exit']:
-                    console.print("[yellow]Goodbye![/yellow]")
+                    print_warning("Goodbye!")
                     break
                 
                 elif command == 'help':
@@ -1660,7 +1672,7 @@ class AssemblyREPL:
                     if len(parts) > 1:
                         self.switch_architecture(parts[1])
                     else:
-                        console.print(f"[green]Current architecture: {self.current_arch.upper()}[/green]")
+                        print_info(f"Current architecture: {self.current_arch.upper()}")
                         console.print(f"Available: {', '.join(self.ARCHITECTURES.keys())}")
                 
                 elif command == 'endian':
@@ -1674,7 +1686,7 @@ class AssemblyREPL:
                 
                 elif command in ['memory', 'mem']:
                     if len(parts) < 2:
-                        console.print("[red]Usage: memory <address> [size][/red]")
+                        print_error("Usage: memory <address> [size]")
                     else:
                         addr = self.parse_value(parts[1])
                         size = self.parse_value(parts[2]) if len(parts) > 2 else 64
@@ -1685,7 +1697,7 @@ class AssemblyREPL:
                 
                 elif command in ['assemble', 'asm']:
                     if len(parts) < 2:
-                        console.print("[red]Usage: asm <instruction>[/red]")
+                        print_error("Usage: asm <instruction>")
                     else:
                         instruction = ' '.join(parts[1:])
                         self.assemble_and_execute(instruction)
@@ -1701,7 +1713,7 @@ class AssemblyREPL:
                 
                 elif command == 'set_reg':
                     if len(parts) < 3:
-                        console.print("[red]Usage: set_reg <register> <value>[/red]")
+                        print_error("Usage: set_reg <register> <value>")
                     else:
                         reg_name = parts[1]
                         value = self.parse_value(parts[2])
@@ -1709,7 +1721,7 @@ class AssemblyREPL:
                 
                 elif command == 'set_mem':
                     if len(parts) < 3:
-                        console.print("[red]Usage: set_mem <address> <value> [size][/red]")
+                        print_error("Usage: set_mem <address> <value> [size]")
                     else:
                         addr = self.parse_value(parts[1])
                         value = self.parse_value(parts[2])
@@ -1718,22 +1730,22 @@ class AssemblyREPL:
                 
                 elif command in ['breakpoint', 'bp']:
                     if len(parts) < 2:
-                        console.print("[red]Usage: bp <address>[/red]")
+                        print_error("Usage: bp <address>")
                     else:
                         addr = self.parse_value(parts[1])
                         self.breakpoints.add(addr)
-                        console.print(f"[green]Breakpoint set at 0x{addr:x}[/green]")
+                        print_info(f"Breakpoint set at 0x{addr:x}")
                 
                 elif command == 'clear_bp':
                     if len(parts) < 2:
-                        console.print("[red]Usage: clear_bp <address>[/red]")
+                        print_error("Usage: clear_bp <address>")
                     else:
                         addr = self.parse_value(parts[1])
                         if addr in self.breakpoints:
                             self.breakpoints.remove(addr)
-                            console.print(f"[green]Breakpoint cleared at 0x{addr:x}[/green]")
+                            print_info(f"Breakpoint cleared at 0x{addr:x}")
                         else:
-                            console.print(f"[red]No breakpoint at 0x{addr:x}[/red]")
+                            print_error(f"No breakpoint at 0x{addr:x}")
                 
                 elif command == 'list_bp':
                     if self.breakpoints:
@@ -1741,13 +1753,13 @@ class AssemblyREPL:
                         for addr in sorted(self.breakpoints):
                             console.print(f"  0x{addr:x}")
                     else:
-                        console.print("[yellow]No breakpoints set[/yellow]")
+                        print_warning("No breakpoints set")
                 
                 elif command == 'reset':
                     self.init_engine()
                     self.code_history.clear()
                     self.breakpoints.clear()
-                    console.print("[green]CPU state reset[/green]")
+                    print_info("CPU state reset")
                 
                 elif command == 'step':
                     try:
@@ -1763,9 +1775,9 @@ class AssemblyREPL:
                             console.print(f"[cyan]Stepping: 0x{insn.address:08x} {insn.mnemonic} {insn.op_str}[/cyan]")
                             self.uc.emu_start(current_ip, current_ip + insn.size)
                         else:
-                            console.print("[red]No instruction found at current IP[/red]")
+                            print_error("No instruction found at current IP")
                     except Exception as e:
-                        console.print(f"[red]Error stepping: {e}[/red]")
+                        print_error(f"Error stepping: {e}")
                 
                 elif command == 'run':
                     count = self.parse_value(parts[1]) if len(parts) > 1 else 10
@@ -1776,7 +1788,7 @@ class AssemblyREPL:
                             
                             # Check for breakpoints
                             if current_ip in self.breakpoints:
-                                console.print(f"[yellow]Hit breakpoint at 0x{current_ip:x}[/yellow]")
+                                print_warning(f"Hit breakpoint at 0x{current_ip:x}")
                                 break
                             
                             # Read and execute instruction
@@ -1787,28 +1799,28 @@ class AssemblyREPL:
                                 insn = instructions[0]
                                 self.uc.emu_start(current_ip, current_ip + insn.size)
                             else:
-                                console.print(f"[red]No instruction found at 0x{current_ip:x}[/red]")
+                                print_error(f"No instruction found at 0x{current_ip:x}")
                                 break
                         
-                        console.print(f"[green]Executed {count} instructions[/green]")
+                        print_info(f"Executed {count} instructions")
                     except Exception as e:
-                        console.print(f"[red]Error running: {e}[/red]")
+                        print_error(f"Error running: {e}")
                 
                 elif command == 'save':
                     if len(parts) < 2:
-                        console.print("[red]Usage: save <filename>[/red]")
+                        print_error("Usage: save <filename>")
                     else:
                         self.save_state(parts[1])
                 
                 elif command == 'load':
                     if len(parts) < 2:
-                        console.print("[red]Usage: load <filename>[/red]")
+                        print_error("Usage: load <filename>")
                     else:
                         self.load_state(parts[1])
                 
                 elif command == 'load_asm':
                     if len(parts) < 2:
-                        console.print("[red]Usage: load_asm <filename> [address][/red]")
+                        print_error("Usage: load_asm <filename> [address]")
                     else:
                         filename = parts[1]
                         address = self.parse_value(parts[2]) if len(parts) > 2 else None
@@ -1816,7 +1828,7 @@ class AssemblyREPL:
                 
                 elif command == 'load_bin':
                     if len(parts) < 2:
-                        console.print("[red]Usage: load_bin <filename> [address][/red]")
+                        print_error("Usage: load_bin <filename> [address]")
                     else:
                         filename = parts[1]
                         address = self.parse_value(parts[2]) if len(parts) > 2 else None
@@ -1824,13 +1836,13 @@ class AssemblyREPL:
                 
                 elif command == 'dump_asm':
                     if len(parts) < 2:
-                        console.print("[red]Usage: dump_asm <filename>[/red]")
+                        print_error("Usage: dump_asm <filename>")
                     else:
                         self.dump_assembly(parts[1])
                 
                 elif command == 'dump_mem':
                     if len(parts) < 4:
-                        console.print("[red]Usage: dump_mem <filename> <address> <size>[/red]")
+                        print_error("Usage: dump_mem <filename> <address> <size>")
                     else:
                         filename = parts[1]
                         addr = self.parse_value(parts[2])
@@ -1840,17 +1852,17 @@ class AssemblyREPL:
                 elif command == 'toggle_display':
                     self.auto_display = not self.auto_display
                     status = "enabled" if self.auto_display else "disabled"
-                    console.print(f"[green]Auto-display {status}[/green]")
+                    print_info(f"Auto-display {status}")
                 
                 elif command == 'toggle_direct':
                     self.direct_execution = not self.direct_execution
                     status = "enabled" if self.direct_execution else "disabled"
                     mode_desc = "Direct execution mode" if self.direct_execution else "Normal execution mode"
-                    console.print(f"[green]{mode_desc} {status}[/green]")
+                    print_info(f"{mode_desc} {status}")
                     if self.direct_execution:
-                        console.print("[yellow]Instructions will execute without loading into memory first[/yellow]")
+                        print_warning("Instructions will execute without loading into memory first")
                     else:
-                        console.print("[yellow]Instructions will be loaded into memory before execution[/yellow]")
+                        print_warning("Instructions will be loaded into memory before execution")
                 
                 else:
                     # If it's not a known command, treat it as an assembly instruction
@@ -1864,12 +1876,12 @@ class AssemblyREPL:
                     self._display_auto_panels()
             
             except KeyboardInterrupt:
-                console.print("\n[yellow]Use 'quit' or 'exit' to leave the REPL[/yellow]")
+                print_warning("\nUse 'quit' or 'exit' to leave the REPL")
             except EOFError:
-                console.print("\n[yellow]Goodbye![/yellow]")
+                print_warning("\nGoodbye!")
                 break
             except Exception as e:
-                console.print(f"[red]Error: {e}[/red]")
+                print_error(f"{e}")
 
 
 def main():
@@ -1878,9 +1890,9 @@ def main():
         repl = AssemblyREPL()
         repl.run_repl()
     except KeyboardInterrupt:
-        console.print("\n[yellow]Goodbye![/yellow]")
+        print_warning("\nGoodbye!")
     except Exception as e:
-        console.print(f"[red]Fatal error: {e}[/red]")
+        print_error(f"{e}")
         sys.exit(1)
 
 
