@@ -183,7 +183,7 @@ class AssemblyREPL:
             cs_mode=CS_MODE_MIPS32,
             ks_arch=KS_ARCH_MIPS,
             ks_mode=KS_MODE_MIPS32,
-            is_little_endian=True,
+            is_little_endian=False,
             registers={
                 'r0 (zero)': UC_MIPS_REG_ZERO,
                 'r1 (at)': UC_MIPS_REG_AT,
@@ -552,29 +552,32 @@ class AssemblyREPL:
     
     def _get_keystone_engine(self):
         """Get the keystone-engine instance for assembly"""
+        mode = self.arch_config.ks_mode
         if self.arch_config.is_little_endian:
-            ks_endian = KS_MODE_LITTLE_ENDIAN
+            mode |= KS_MODE_LITTLE_ENDIAN
         else:
-            ks_endian = KS_MODE_BIG_ENDIAN
-        ks = Ks(self.arch_config.ks_arch, self.arch_config.ks_mode | ks_endian)
+            mode |= KS_MODE_BIG_ENDIAN
+        ks = Ks(self.arch_config.ks_arch, mode)
         return ks
 
     def _get_capstone_engine(self):
         """Get the capstone-engine instance for disassembly"""
+        mode = self.arch_config.cs_mode
         if self.arch_config.is_little_endian:
-            cs_endian = CS_MODE_LITTLE_ENDIAN
+            mode |= CS_MODE_LITTLE_ENDIAN
         else:
-            cs_endian = CS_MODE_BIG_ENDIAN
-        cs = Cs(self.arch_config.cs_arch, self.arch_config.cs_mode | cs_endian)
+            mode |= CS_MODE_BIG_ENDIAN
+        cs = Cs(self.arch_config.cs_arch, mode)
         return cs
     
     def _get_unicorn_engine(self):
         """Get the unicorn-engine instance for emulation"""
+        mode = self.arch_config.uc_mode
         if self.arch_config.is_little_endian:
-            uc_endian = UC_MODE_LITTLE_ENDIAN
+            mode |= UC_MODE_LITTLE_ENDIAN
         else:
-            uc_endian = UC_MODE_BIG_ENDIAN
-        uc = Uc(self.arch_config.uc_arch, self.arch_config.uc_mode | uc_endian)
+            mode |= UC_MODE_BIG_ENDIAN
+        uc = Uc(self.arch_config.uc_arch, mode)
         return uc
 
     def _get_assembly_instructions(self) -> List[str]:
@@ -1602,17 +1605,27 @@ class AssemblyREPL:
             print_error("Invalid endianness. Use 'little' or 'big'.")
             return
 
-        if self.current_arch.startswith('x86') and endian_str == 'big':
-            print_warning("x86 architectures are little-endian only.")
-            return
+        is_little = (endian_str == 'little')
+
+        if self.arch_config.uc_arch == UC_ARCH_X86:
+            if not is_little:
+                print_error("x86 architecture only supports little-endian.")
+                return
+        elif self.arch_config.uc_arch == UC_ARCH_ARM64:
+            if not is_little:
+                print_error("ARM64 architecture emulation only supports little-endian.")
+                return
+        elif self.arch_config.uc_arch == UC_ARCH_PPC:
+            if is_little:
+                print_error("PowerPC architecture emulation only supports big-endian.")
+                return
         
         # Check if endianness actually changed
-        if self.arch_config.is_little_endian and endian_str == 'little' or \
-            not self.arch_config.is_little_endian and endian_str == 'big':
+        if self.arch_config.is_little_endian == is_little:
             print_warning(f"Endianness is already set to {endian_str}-endian.")
             return
         
-        self.arch_config.is_little_endian = (endian_str == 'little')
+        self.arch_config.is_little_endian = is_little
 
         print_info(f"Switched to {endian_str}-endian.")
         self.init_engine()
