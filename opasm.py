@@ -1669,7 +1669,7 @@ class AssemblyREPL:
         while True:
             try:
                 user_input = prompt(
-                    f"asm-repl:{self.current_arch}> ",
+                    f"opasm:{self.current_arch}> ",
                     completer=self.completer,
                     history=self.history
                 ).strip()
