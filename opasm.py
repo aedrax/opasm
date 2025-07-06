@@ -51,6 +51,7 @@ class ArchConfig:
     cs_mode: int
     ks_arch: int
     ks_mode: int
+    is_little_endian: bool
     registers: Dict[str, int]
     instruction_pointer_register: int
     stack_pointer_register: int
@@ -72,6 +73,7 @@ class AssemblyREPL:
             cs_mode=CS_MODE_32,
             ks_arch=KS_ARCH_X86,
             ks_mode=KS_MODE_32,
+            is_little_endian=True,
             registers={
                 'eax': UC_X86_REG_EAX, 'ebx': UC_X86_REG_EBX, 'ecx': UC_X86_REG_ECX, 'edx': UC_X86_REG_EDX,
                 'esi': UC_X86_REG_ESI, 'edi': UC_X86_REG_EDI, 'esp': UC_X86_REG_ESP, 'ebp': UC_X86_REG_EBP,
@@ -95,6 +97,7 @@ class AssemblyREPL:
             cs_mode=CS_MODE_64,
             ks_arch=KS_ARCH_X86,
             ks_mode=KS_MODE_64,
+            is_little_endian=True,
             registers={
                 'rax': UC_X86_REG_RAX, 'rbx': UC_X86_REG_RBX, 'rcx': UC_X86_REG_RCX, 'rdx': UC_X86_REG_RDX,
                 'rsi': UC_X86_REG_RSI, 'rdi': UC_X86_REG_RDI, 'rsp': UC_X86_REG_RSP, 'rbp': UC_X86_REG_RBP,
@@ -118,6 +121,7 @@ class AssemblyREPL:
             cs_mode=CS_MODE_ARM,
             ks_arch=KS_ARCH_ARM,
             ks_mode=KS_MODE_ARM,
+            is_little_endian=True,
             registers={
                 'r0': UC_ARM_REG_R0, 'r1': UC_ARM_REG_R1, 'r2': UC_ARM_REG_R2, 'r3': UC_ARM_REG_R3,
                 'r4': UC_ARM_REG_R4, 'r5': UC_ARM_REG_R5, 'r6': UC_ARM_REG_R6, 'r7': UC_ARM_REG_R7,
@@ -140,6 +144,7 @@ class AssemblyREPL:
             cs_mode=CS_MODE_ARM,
             ks_arch=KS_ARCH_ARM64,
             ks_mode=KS_MODE_LITTLE_ENDIAN,
+            is_little_endian=True,
             registers={
                 'x0': UC_ARM64_REG_X0, 'x1': UC_ARM64_REG_X1, 'x2': UC_ARM64_REG_X2, 'x3': UC_ARM64_REG_X3,
                 'x4': UC_ARM64_REG_X4, 'x5': UC_ARM64_REG_X5, 'x6': UC_ARM64_REG_X6, 'x7': UC_ARM64_REG_X7,
@@ -161,11 +166,12 @@ class AssemblyREPL:
         'mips32': ArchConfig(
             name='mips32',
             uc_arch=UC_ARCH_MIPS,
-            uc_mode=UC_MODE_MIPS32 + UC_MODE_BIG_ENDIAN,
+            uc_mode=UC_MODE_MIPS32,
             cs_arch=CS_ARCH_MIPS,
-            cs_mode=CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN,
+            cs_mode=CS_MODE_MIPS32,
             ks_arch=KS_ARCH_MIPS,
-            ks_mode=KS_MODE_MIPS32 + KS_MODE_BIG_ENDIAN,
+            ks_mode=KS_MODE_MIPS32,
+            is_little_endian=True,
             registers={
                 'r0 (zero)': UC_MIPS_REG_ZERO,
                 'r1 (at)': UC_MIPS_REG_AT,
@@ -212,11 +218,12 @@ class AssemblyREPL:
         'mips64': ArchConfig(
             name='mips64',
             uc_arch=UC_ARCH_MIPS,
-            uc_mode=UC_MODE_MIPS64 + UC_MODE_BIG_ENDIAN,
+            uc_mode=UC_MODE_MIPS64,
             cs_arch=CS_ARCH_MIPS,
-            cs_mode=CS_MODE_MIPS64 + CS_MODE_BIG_ENDIAN,
+            cs_mode=CS_MODE_MIPS64,
             ks_arch=KS_ARCH_MIPS,
-            ks_mode=KS_MODE_MIPS64 + KS_MODE_BIG_ENDIAN,
+            ks_mode=KS_MODE_MIPS64,
+            is_little_endian=False,
             registers={
                 'r0 (zero)': UC_MIPS_REG_ZERO,
                 'r1 (at)': UC_MIPS_REG_AT,
@@ -263,11 +270,12 @@ class AssemblyREPL:
         'ppc32': ArchConfig(
             name='ppc32',
             uc_arch=UC_ARCH_PPC,
-            uc_mode=UC_MODE_PPC32 + UC_MODE_BIG_ENDIAN,
+            uc_mode=UC_MODE_PPC32,
             cs_arch=CS_ARCH_PPC,
-            cs_mode=CS_MODE_32 + CS_MODE_BIG_ENDIAN,
+            cs_mode=CS_MODE_32,
             ks_arch=KS_ARCH_PPC,
-            ks_mode=KS_MODE_PPC32 + KS_MODE_BIG_ENDIAN,
+            ks_mode=KS_MODE_PPC32,
+            is_little_endian=False,
             registers = {
                 "r0": UC_PPC_REG_0,
                 "r1": UC_PPC_REG_1,
@@ -349,11 +357,12 @@ class AssemblyREPL:
         'ppc64': ArchConfig(
             name='ppc64',
             uc_arch=UC_ARCH_PPC,
-            uc_mode=UC_MODE_PPC64 + UC_MODE_BIG_ENDIAN,
+            uc_mode=UC_MODE_PPC64,
             cs_arch=CS_ARCH_PPC,
-            cs_mode=CS_MODE_64 + CS_MODE_BIG_ENDIAN,
+            cs_mode=CS_MODE_64,
             ks_arch=KS_ARCH_PPC,
-            ks_mode=KS_MODE_PPC64 + KS_MODE_BIG_ENDIAN,
+            ks_mode=KS_MODE_PPC64,
+            is_little_endian=False,
             registers = {
                 "r0": UC_PPC_REG_0,
                 "r1": UC_PPC_REG_1,
@@ -453,7 +462,7 @@ class AssemblyREPL:
             'help', 'arch', 'registers', 'reg', 'memory', 'mem', 'regions', 'assemble', 'asm',
             'disasm', 'step', 'run', 'reset', 'save', 'load', 'load_asm', 'load_bin', 
             'dump_asm', 'dump_mem', 'set_reg', 'set_mem', 'breakpoint', 'bp', 'clear_bp', 
-            'list_bp', 'quit', 'exit', 'toggle_display', 'toggle_direct'
+            'list_bp', 'quit', 'exit', 'toggle_display', 'toggle_direct', 'endian'
         ]
         self._update_completer()
 
@@ -522,6 +531,33 @@ class AssemblyREPL:
         
         return ContextAwareCompleter(self)
     
+    def _get_keystone_engine(self):
+        """Get the keystone-engine instance for assembly"""
+        if self.arch_config.is_little_endian:
+            ks_endian = KS_MODE_LITTLE_ENDIAN
+        else:
+            ks_endian = KS_MODE_BIG_ENDIAN
+        ks = Ks(self.arch_config.ks_arch, self.arch_config.ks_mode | ks_endian)
+        return ks
+
+    def _get_capstone_engine(self):
+        """Get the capstone-engine instance for disassembly"""
+        if self.arch_config.is_little_endian:
+            cs_endian = CS_MODE_LITTLE_ENDIAN
+        else:
+            cs_endian = CS_MODE_BIG_ENDIAN
+        cs = Cs(self.arch_config.cs_arch, self.arch_config.cs_mode | cs_endian)
+        return cs
+    
+    def _get_unicorn_engine(self):
+        """Get the unicorn-engine instance for emulation"""
+        if self.arch_config.is_little_endian:
+            uc_endian = UC_MODE_LITTLE_ENDIAN
+        else:
+            uc_endian = UC_MODE_BIG_ENDIAN
+        uc = Uc(self.arch_config.uc_arch, self.arch_config.uc_mode | uc_endian)
+        return uc
+
     def _get_assembly_instructions(self) -> List[str]:
         """Get common assembly instructions for the current architecture"""
         if self.current_arch in ['x86', 'x64']:
@@ -637,10 +673,13 @@ class AssemblyREPL:
         """Initialize Unicorn and Capstone engines"""
         try:
             # Initialize Unicorn engine
-            self.uc = Uc(self.arch_config.uc_arch, self.arch_config.uc_mode)
+            self.uc = self._get_unicorn_engine()
             
             # Initialize Capstone engine
-            self.cs = Cs(self.arch_config.cs_arch, self.arch_config.cs_mode)
+            self.cs = self._get_capstone_engine()
+
+            # Initialize Keystone engine
+            self.ks = self._get_keystone_engine()
             
             # Map memory regions
             self._map_memory_regions()
@@ -700,6 +739,7 @@ class AssemblyREPL:
 
 [bold green]Architecture & Setup:[/bold green]
   arch <name>            - Show current arch or switch to: x86, x64, arm, arm64, mips, mips64, ppc32, ppc64
+  endian <type>          - Set endianness to 'little' or 'big' (if supported)
   reset                  - Reset CPU state and clear memory
 
 [bold green]Assembly & Execution:[/bold green]
@@ -1266,7 +1306,7 @@ class AssemblyREPL:
         """Assemble instruction using keystone-engine"""
         try:
             # Try keystone-engine first for full assembly support
-            ks = Ks(self.arch_config.ks_arch, self.arch_config.ks_mode)
+            ks = self._get_keystone_engine()
             encoding, count = ks.asm(instruction)
             if encoding:
                 return bytes(encoding)
@@ -1428,8 +1468,8 @@ class AssemblyREPL:
                 lines = f.readlines()
             
             # Initialize keystone assembler
-            ks = Ks(self.arch_config.ks_arch, self.arch_config.ks_mode)
-            
+            ks = self._get_keystone_engine()
+
             total_code = b''
             instruction_count = 0
             current_addr = address
@@ -1536,6 +1576,33 @@ class AssemblyREPL:
         
         console.print(f"[green]Switched to {arch_name.upper()} architecture[/green]")
 
+    def set_endian(self, endian_str: str):
+        """Set the endianness for the current architecture"""
+        endian_str = endian_str.lower()
+        if endian_str not in ['little', 'big']:
+            console.print("[red]Invalid endianness. Use 'little' or 'big'.[/red]")
+            return
+
+        if self.current_arch.startswith('x86') and endian_str == 'big':
+            console.print("[yellow]x86 architectures are little-endian only.[/yellow]")
+            return
+        
+        # Check if endianness actually changed
+        if self.arch_config.is_little_endian and endian_str == 'little' or \
+            not self.arch_config.is_little_endian and endian_str == 'big':
+            console.print(f"[yellow]Endianness is already set to {endian_str}-endian.[/yellow]")
+            return
+        
+        self.arch_config.is_little_endian = (endian_str == 'little')
+
+        console.print(f"[green]Switched to {endian_str}-endian.[/green]")
+        self.init_engine()
+
+    def show_endian(self):
+        """Show the current endianness"""
+        endian = "Little-endian" if self.arch_config.is_little_endian else "Big-endian"
+        console.print(f"[green]Current endianness: {endian}[/green]")
+
     def parse_value(self, value_str: str) -> int:
         """Parse integer value from string (supports hex, decimal, and register dereferencing)"""
         value_str = value_str.strip()
@@ -1596,6 +1663,12 @@ class AssemblyREPL:
                         console.print(f"[green]Current architecture: {self.current_arch.upper()}[/green]")
                         console.print(f"Available: {', '.join(self.ARCHITECTURES.keys())}")
                 
+                elif command == 'endian':
+                    if len(parts) > 1:
+                        self.set_endian(parts[1])
+                    else:
+                        self.show_endian()
+
                 elif command in ['registers', 'reg']:
                     self.show_registers()
                 
