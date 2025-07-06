@@ -521,6 +521,13 @@ class AssemblyREPL:
                             if arch.startswith(current_word.lower()):
                                 yield Completion(arch, start_position=-len(current_word))
                     
+                    elif command == 'endian' and (len(words) == 1 or (len(words) == 2 and not text.endswith(' '))):
+                        # After 'endian' command, show endian options
+                        endian_options = ['little', 'big']
+                        for endian in endian_options:
+                            if endian.startswith(current_word.lower()):
+                                yield Completion(endian, start_position=-len(current_word))
+
                     elif command in ['set_reg', 'bp', 'memory', 'mem'] and len(words) == 2 and not text.endswith(' '):
                         # After register-related commands, show registers
                         for reg in self.repl.arch_config.registers.keys():
