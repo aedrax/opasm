@@ -1352,10 +1352,14 @@ class AssemblyREPL:
             
             table = Table(box=box.ROUNDED)
             table.add_column("Address", style="yellow", min_width=12)
+            table.add_column("Encoding", style="white", min_width=24)
             table.add_column("Instruction", style="white", min_width=30)
             
             for insn in instructions:
-                table.add_row(f"0x{insn.address:08x}:", f"{insn.mnemonic} {insn.op_str}")
+                instruction = f"{insn.mnemonic} {insn.op_str}"
+                table.add_row(f"0x{insn.address:08x}:",
+                              ' '.join(map("{:02x}".format, self._simple_assemble(instruction))),
+                              instruction)
             
             console.print(table)
                 
