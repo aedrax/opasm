@@ -194,6 +194,7 @@ class AssemblyREPL:
             ks_mode=KS_MODE_MIPS32,
             is_little_endian=False,
             registers={
+                'CP0_STATUS': UC_MIPS_REG_CP0_STATUS,
                 'r0 (zero)': UC_MIPS_REG_ZERO,
                 'r1 (at)': UC_MIPS_REG_AT,
                 'r2 (v0)': UC_MIPS_REG_V0,
@@ -246,6 +247,7 @@ class AssemblyREPL:
             ks_mode=KS_MODE_MIPS64,
             is_little_endian=False,
             registers={
+                'CP0_STATUS': UC_MIPS_REG_CP0_STATUS,
                 'r0 (zero)': UC_MIPS_REG_ZERO,
                 'r1 (at)': UC_MIPS_REG_AT,
                 'r2 (v0)': UC_MIPS_REG_V0,
@@ -918,6 +920,107 @@ class AssemblyREPL:
                 table.add_row(left[0], left[1], left[2], right[0], right[1], right[2])
         
         console.print(table)
+
+        # Show flags if not in compact mode
+        if not compact:
+            self.show_flags()
+
+    def _get_flags_info(self):
+        """Get flag register name and flag definitions for the current architecture"""
+        if self.current_arch in [ARCH_X86, ARCH_X64]:
+            flag_reg_name = 'eflags' if self.current_arch == ARCH_X86 else 'rflags'
+            flags = {
+                'CF': 0,
+                'PF': 2,
+                'AF': 4,
+                'ZF': 6,
+                'SF': 7,
+                'TF': 8, 
+                'IF': 9,
+                'DF': 10,
+                'OF': 11,
+                'NT': 14,
+                'MD': 15,
+                'RF': 16,
+                'VM': 17,
+                'AC': 18,
+                'VIF': 19,
+                'VIP': 20,
+                'ID': 21
+            }
+            return flag_reg_name, flags
+        elif self.current_arch in [ARCH_ARM, ARCH_ARM64]:
+            flag_reg_name = 'cpsr' if self.current_arch == ARCH_ARM else 'nzcv'
+            flags = {
+                'N': 31,
+                'Z': 30,
+                'C': 29,
+                'V': 28
+            }
+            return flag_reg_name, flags
+        elif self.current_arch in [ARCH_MIPS32, ARCH_MIPS64]:
+            return 'CP0_STATUS', {
+                'CU0': 28,
+                'CU1': 29,
+                'CU2': 30,
+                'CU3': 31,
+                'BEV': 22,
+                'ITS': 21,
+                'ERL': 2,
+                'EXL': 1,
+                'IE': 0
+            }
+        elif self.current_arch in [ARCH_PPC32, ARCH_PPC64]:
+            return 'cr', {
+                'SO': 31,
+                'EQ': 30,
+                'GT': 29,
+                'LT': 28
+            }
+        return None, None
+
+    def show_flags(self):
+        """Display decoded flags for the current architecture"""
+        flag_reg_name, flags = self._get_flags_info()
+        if not flag_reg_name or not flags:
+            return
+
+        try:
+            flag_reg_id = self.arch_config.registers.get(flag_reg_name)
+            if not flag_reg_id:
+                return
+            
+            value = self.uc.reg_read(flag_reg_id)
+
+            table = Table(title=f"Flags ({flag_reg_name.upper()})", box=box.ROUNDED, show_header=False, padding=0)
+            table.add_column("", style="cyan", min_width=5)
+            table.add_column("", style="yellow", min_width=5)
+            table.add_column("", style="cyan", min_width=5)
+            table.add_column("", style="yellow", min_width=5)
+            table.add_column("", style="cyan", min_width=5)
+            table.add_column("", style="yellow", min_width=5)
+
+            flag_data = []
+            for name, bit in flags.items():
+                is_set = (value >> bit) & 1
+                flag_data.append([name, str(is_set)])
+
+            # Split into 3 columns
+            third = (len(flag_data) + 2) // 3
+            col1 = flag_data[:third]
+            col2 = flag_data[third:third*2]
+            col3 = flag_data[third*2:]
+
+            for i in range(max(len(col1), len(col2), len(col3))):
+                c1 = col1[i] if i < len(col1) else ["", ""]
+                c2 = col2[i] if i < len(col2) else ["", ""]
+                c3 = col3[i] if i < len(col3) else ["", ""]
+                table.add_row(c1[0], c1[1], c2[0], c2[1], c3[0], c3[1])
+            
+            console.print(table)
+
+        except Exception as e:
+            print_warning(f"Could not display flags: {e}")
 
     def show_stack(self, compact: bool = False, highlight_changes: set = None):
         """Display stack contents"""
