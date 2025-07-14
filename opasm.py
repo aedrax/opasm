@@ -38,6 +38,15 @@ except ImportError as e:
     print("Please install requirements: pip install -r requirements.txt")
     sys.exit(1)
 
+ARCH_X86 = 'x86'
+ARCH_X64 = 'x64'
+ARCH_ARM = 'arm'
+ARCH_ARM64 = 'arm64'
+ARCH_MIPS32 = 'mips32'
+ARCH_MIPS64 = 'mips64'
+ARCH_PPC32 = 'ppc32'
+ARCH_PPC64 = 'ppc64'
+
 # Initialize rich console
 console = Console()
 
@@ -77,8 +86,8 @@ class AssemblyREPL:
     
     # Architecture configurations
     ARCHITECTURES = {
-        'x86': ArchConfig(
-            name='x86',
+        ARCH_X86: ArchConfig(
+            name=ARCH_X86,
             uc_arch=UC_ARCH_X86,
             uc_mode=UC_MODE_32,
             cs_arch=CS_ARCH_X86,
@@ -101,8 +110,8 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=4
         ),
-        'x64': ArchConfig(
-            name='x64',
+        ARCH_X64: ArchConfig(
+            name=ARCH_X64,
             uc_arch=UC_ARCH_X86,
             uc_mode=UC_MODE_64,
             cs_arch=CS_ARCH_X86,
@@ -125,8 +134,8 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=8
         ),
-        'arm': ArchConfig(
-            name='arm',
+        ARCH_ARM: ArchConfig(
+            name=ARCH_ARM,
             uc_arch=UC_ARCH_ARM,
             uc_mode=UC_MODE_ARM,
             cs_arch=CS_ARCH_ARM,
@@ -148,8 +157,8 @@ class AssemblyREPL:
             data_base=0x20000000,
             word_size=4
         ),
-        'arm64': ArchConfig(
-            name='arm64',
+        ARCH_ARM64: ArchConfig(
+            name=ARCH_ARM64,
             uc_arch=UC_ARCH_ARM64,
             uc_mode=UC_MODE_ARM,
             cs_arch=CS_ARCH_ARM64,
@@ -175,8 +184,8 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=8
         ),
-        'mips32': ArchConfig(
-            name='mips32',
+        ARCH_MIPS32: ArchConfig(
+            name=ARCH_MIPS32,
             uc_arch=UC_ARCH_MIPS,
             uc_mode=UC_MODE_MIPS32,
             cs_arch=CS_ARCH_MIPS,
@@ -227,8 +236,8 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=4
         ),
-        'mips64': ArchConfig(
-            name='mips64',
+        ARCH_MIPS64: ArchConfig(
+            name=ARCH_MIPS64,
             uc_arch=UC_ARCH_MIPS,
             uc_mode=UC_MODE_MIPS64,
             cs_arch=CS_ARCH_MIPS,
@@ -279,8 +288,8 @@ class AssemblyREPL:
             data_base=0x10000000,
             word_size=8
         ),
-        'ppc32': ArchConfig(
-            name='ppc32',
+        ARCH_PPC32: ArchConfig(
+            name=ARCH_PPC32,
             uc_arch=UC_ARCH_PPC,
             uc_mode=UC_MODE_PPC32,
             cs_arch=CS_ARCH_PPC,
@@ -366,8 +375,8 @@ class AssemblyREPL:
             data_base=0x20000000,
             word_size=4
         ),
-        'ppc64': ArchConfig(
-            name='ppc64',
+        ARCH_PPC64: ArchConfig(
+            name=ARCH_PPC64,
             uc_arch=UC_ARCH_PPC,
             uc_mode=UC_MODE_PPC64,
             cs_arch=CS_ARCH_PPC,
@@ -582,7 +591,7 @@ class AssemblyREPL:
 
     def _get_assembly_instructions(self) -> List[str]:
         """Get common assembly instructions for the current architecture"""
-        if self.current_arch in ['x86', 'x64']:
+        if self.current_arch in [ARCH_X86, ARCH_X64]:
             return [
                 # Data movement
                 'mov', 'movsx', 'movzx', 'lea', 'xchg',
@@ -602,7 +611,7 @@ class AssemblyREPL:
                 # Other
                 'nop', 'hlt', 'cld', 'std', 'cli', 'sti',
             ]
-        elif self.current_arch == 'arm':
+        elif self.current_arch == ARCH_ARM:
             return [
                 # Data movement
                 'mov', 'mvn', 'ldr', 'str', 'ldm', 'stm',
@@ -618,7 +627,7 @@ class AssemblyREPL:
                 # Other
                 'nop', 'swi', 'mrs', 'msr',
             ]
-        elif self.current_arch == 'arm64':
+        elif self.current_arch == ARCH_ARM64:
             return [
                 # Data movement
                 'mov', 'mvn', 'ldr', 'str', 'ldp', 'stp',
@@ -635,7 +644,7 @@ class AssemblyREPL:
                 # Other
                 'nop', 'svc', 'mrs', 'msr',
             ]
-        elif self.current_arch in ['mips32', 'mips64']:
+        elif self.current_arch in [ARCH_MIPS32, ARCH_MIPS64]:
             return [
                 # Data movement
                 'move', 'li', 'la',
@@ -655,7 +664,7 @@ class AssemblyREPL:
                 # Other
                 'nop', 'syscall', 'break',
             ]
-        elif self.current_arch in ['ppc32', 'ppc64']:
+        elif self.current_arch in [ARCH_PPC32, ARCH_PPC64]:
             return [
                 # Data movement
                 'li', 'lis', 'la', 'mr',
@@ -681,15 +690,15 @@ class AssemblyREPL:
         """Detect the system architecture"""
         machine = platform.machine().lower()
         if machine in ['x86_64', 'amd64']:
-            return 'x64'
+            return ARCH_X64
         elif machine in ['i386', 'i686']:
-            return 'x86'
+            return ARCH_X86
         elif machine.startswith('arm') and '64' in machine:
-            return 'arm64'
+            return ARCH_ARM64
         elif machine.startswith('arm'):
-            return 'arm'
+            return ARCH_ARM
         else:
-            return 'x64'  # Default fallback
+            return ARCH_X64  # Default fallback
 
     def init_engine(self):
         """Initialize Unicorn and Capstone engines"""
