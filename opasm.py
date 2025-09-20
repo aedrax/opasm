@@ -33,6 +33,10 @@ try:
     from prompt_toolkit.completion import WordCompleter
     from prompt_toolkit.history import InMemoryHistory
     from prompt_toolkit.shortcuts import confirm
+    from textual.app import App, ComposeResult
+    from textual.widgets import DataTable, Footer, Header, Static, Input
+    from textual.containers import Container
+    from textual.binding import Binding
 except ImportError as e:
     print(f"Missing required dependency: {e}")
     print("Please install requirements: pip install -r requirements.txt")
@@ -2020,11 +2024,169 @@ class AssemblyREPL:
                 print_error(f"{e}")
 
 
+class OpasmApp(App):
+    """A Textual app for Opasm."""
+
+    BINDINGS = [
+        Binding("q", "quit", "Quit"),
+        Binding("r", "reset", "Reset"),
+        Binding("s", "step", "Step"),
+        Binding("e", "edit", "Edit"),
+    ]
+
+    def __init__(self, repl: AssemblyREPL):
+        super().__init__()
+        self.repl = repl
+
+    def compose(self) -> ComposeResult:
+        """Create child widgets for the app."""
+        yield Header()
+        with Container():
+            yield DataTable(id="registers", cursor_type="row")
+            yield DataTable(id="stack", cursor_type="row")
+            yield DataTable(id="code", cursor_type="row")
+        yield Input(placeholder="Enter value to write...", id="edit_input", classes="hidden")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        """Called when the app is mounted."""
+        self.update_tables()
+
+    def update_tables(self) -> None:
+        """Update the data tables."""
+        self.update_registers_table()
+        self.update_stack_table()
+        self.update_code_table()
+
+    def update_registers_table(self) -> None:
+        """Update the registers table."""
+        table = self.query_one("#registers", DataTable)
+        table.clear(columns=True)
+        table.add_columns("Register", "Hex Value", "Decimal")
+        
+        reg_data = []
+        for reg_name, reg_id in self.repl.arch_config.registers.items():
+            try:
+                value = self.repl.uc.reg_read(reg_id)
+                hex_val = f"0x{value:0{self.repl.arch_config.word_size*2}x}"
+                reg_data.append((reg_name.upper(), hex_val, str(value)))
+            except:
+                reg_data.append((reg_name.upper(), "N/A", "N/A"))
+        
+        for row in reg_data:
+            table.add_row(*row)
+
+    def update_stack_table(self) -> None:
+        """Update the stack table."""
+        table = self.query_one("#stack", DataTable)
+        table.clear(columns=True)
+        table.add_columns("Address", "Value", "ASCII")
+        
+        try:
+            sp_reg = self.repl.arch_config.stack_pointer_register
+            sp_value = self.repl.uc.reg_read(sp_reg)
+            stack_size = 64
+            data = self.repl.uc.mem_read(sp_value, stack_size)
+            
+            for i in range(0, len(data), self.repl.arch_config.word_size):
+                addr = sp_value + i
+                chunk = data[i:i+self.repl.arch_config.word_size]
+                if len(chunk) >= self.repl.arch_config.word_size:
+                    value = int.from_bytes(chunk, 'little')
+                    hex_val = f"0x{value:0{self.repl.arch_config.word_size*2}x}"
+                    ascii_str = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in chunk)
+                    table.add_row(f"0x{addr:08x}", hex_val, ascii_str)
+        except Exception as e:
+            table.add_row("Error", str(e), "")
+
+    def update_code_table(self) -> None:
+        """Update the code table."""
+        table = self.query_one("#code", DataTable)
+        table.clear(columns=True)
+        table.add_columns("Address", "Bytes", "Instruction")
+        
+        try:
+            ip_reg = self.repl.arch_config.instruction_pointer_register
+            current_ip = self.repl.uc.reg_read(ip_reg)
+            data = self.repl.uc.mem_read(current_ip, 64)
+            instructions = list(self.repl.cs.disasm(data, current_ip))
+            
+            for insn in instructions:
+                addr_str = f"0x{insn.address:08x}"
+                bytes_str = ' '.join(f'{b:02x}' for b in insn.bytes)
+                insn_str = f"{insn.mnemonic} {insn.op_str}"
+                table.add_row(addr_str, bytes_str, insn_str)
+        except Exception as e:
+            table.add_row("Error", str(e), "")
+
+    def action_reset(self) -> None:
+        """Reset the REPL state."""
+        self.repl.init_engine()
+        self.update_tables()
+
+    def action_step(self) -> None:
+        """Step the execution."""
+        try:
+            ip_reg = self.repl.arch_config.instruction_pointer_register
+            current_ip = self.repl.uc.reg_read(ip_reg)
+            data = self.repl.uc.mem_read(current_ip, 16)
+            instructions = list(self.repl.cs.disasm(data, current_ip, 1))
+            if instructions:
+                insn = instructions[0]
+                self.repl.uc.emu_start(current_ip, current_ip + insn.size)
+                self.update_tables()
+        except Exception as e:
+            pass # Handle error display in the app
+
+    def action_edit(self) -> None:
+        """Toggle the edit input."""
+        edit_input = self.query_one("#edit_input", Input)
+        edit_input.toggle_class("hidden")
+        if not edit_input.has_class("hidden"):
+            edit_input.focus()
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle submitted input."""
+        value_str = event.value
+        edit_input = self.query_one("#edit_input", Input)
+        
+        # Determine which table is focused
+        focused = self.focused
+        if isinstance(focused, DataTable):
+            try:
+                value = self.repl.parse_value(value_str)
+                row_key, _ = focused.cursor_coordinate
+                
+                if focused.id == "registers":
+                    reg_name = focused.get_row(row_key)[0].plain
+                    self.repl.set_register(reg_name, value)
+                elif focused.id == "stack":
+                    addr_str = focused.get_row(row_key)[0].plain
+                    addr = int(addr_str, 16)
+                    self.repl.set_memory(addr, value)
+                
+                self.update_tables()
+            except Exception as e:
+                # Optionally, display this error in the app
+                pass
+        
+        edit_input.value = ""
+        edit_input.add_class("hidden")
+
 def main():
     """Main entry point"""
+    import argparse
+    parser = argparse.ArgumentParser(description="Opasm Assembly REPL")
+    parser.add_argument("--pretty", action="store_true", help="Use the textual-based pretty view")
+    args = parser.parse_args()
+
     try:
         repl = AssemblyREPL()
-        repl.run_repl()
+        if args.pretty:
+            app = OpasmApp(repl)
+            app.run()
+        else:
+            repl.run_repl()
     except KeyboardInterrupt:
         print_warning("\nGoodbye!")
     except Exception as e:
