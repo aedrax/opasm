@@ -986,8 +986,58 @@ class AssemblyREPL:
             }
         return None, None
 
+    def _get_flag_descriptions(self):
+        """Get flag descriptions for WinDbg-style display"""
+        if self.current_arch in [ARCH_X86, ARCH_X64]:
+            return {
+                'CF': 'Carry',
+                'PF': 'Parity', 
+                'AF': 'Auxiliary Carry',
+                'ZF': 'Zero',
+                'SF': 'Sign',
+                'TF': 'Trap',
+                'IF': 'Interrupt Enable',
+                'DF': 'Direction',
+                'OF': 'Overflow',
+                'NT': 'Nested Task',
+                'MD': 'Mode',
+                'RF': 'Resume',
+                'VM': 'Virtual 8086',
+                'AC': 'Alignment Check',
+                'VIF': 'Virtual Interrupt',
+                'VIP': 'Virtual Interrupt Pending',
+                'ID': 'ID'
+            }
+        elif self.current_arch in [ARCH_ARM, ARCH_ARM64]:
+            return {
+                'N': 'Negative',
+                'Z': 'Zero', 
+                'C': 'Carry',
+                'V': 'Overflow'
+            }
+        elif self.current_arch in [ARCH_MIPS32, ARCH_MIPS64]:
+            return {
+                'CU0': 'Coprocessor 0 Usable',
+                'CU1': 'Coprocessor 1 Usable',
+                'CU2': 'Coprocessor 2 Usable', 
+                'CU3': 'Coprocessor 3 Usable',
+                'BEV': 'Bootstrap Exception Vector',
+                'ITS': 'Instruction Trace Support',
+                'ERL': 'Error Level',
+                'EXL': 'Exception Level',
+                'IE': 'Interrupt Enable'
+            }
+        elif self.current_arch in [ARCH_PPC32, ARCH_PPC64]:
+            return {
+                'SO': 'Summary Overflow',
+                'EQ': 'Equal',
+                'GT': 'Greater Than',
+                'LT': 'Less Than'
+            }
+        return {}
+
     def show_flags(self):
-        """Display decoded flags for the current architecture"""
+        """Display decoded flags for the current architecture in WinDbg style"""
         flag_reg_name, flags = self._get_flags_info()
         if not flag_reg_name or not flags:
             return
@@ -998,31 +1048,44 @@ class AssemblyREPL:
                 return
             
             value = self.uc.reg_read(flag_reg_id)
+            flag_descriptions = self._get_flag_descriptions()
 
-            table = Table(title=f"Flags ({flag_reg_name.upper()})", box=box.ROUNDED, show_header=False, padding=0)
-            table.add_column("", style="cyan", min_width=5)
-            table.add_column("", style="yellow", min_width=5)
-            table.add_column("", style="cyan", min_width=5)
-            table.add_column("", style="yellow", min_width=5)
-            table.add_column("", style="cyan", min_width=5)
-            table.add_column("", style="yellow", min_width=5)
+            # Create WinDbg-style flag display
+            table = Table(title=f"Flags ({flag_reg_name.upper()}) = 0x{value:x}", box=box.ROUNDED)
+            table.add_column("Flag", style="cyan", min_width=8)
+            table.add_column("Value", style="yellow", min_width=6, justify="center")
+            table.add_column("Description", style="white", min_width=20)
+            table.add_column("Flag", style="cyan", min_width=8)
+            table.add_column("Value", style="yellow", min_width=6, justify="center")  
+            table.add_column("Description", style="white", min_width=20)
 
             flag_data = []
             for name, bit in flags.items():
                 is_set = (value >> bit) & 1
-                flag_data.append([name, str(is_set)])
+                desc = flag_descriptions.get(name, "")
+                flag_display = f"{name}={is_set} ({desc})" if desc else f"{name}={is_set}"
+                
+                # Use different colors for set/clear flags
+                if is_set:
+                    flag_name = f"[bold green]{name}[/bold green]"
+                    flag_value = f"[bold green]{is_set}[/bold green]"
+                    flag_desc = f"[bold green]({desc})[/bold green]" if desc else ""
+                else:
+                    flag_name = f"[dim]{name}[/dim]"
+                    flag_value = f"[dim]{is_set}[/dim]"
+                    flag_desc = f"[dim]({desc})[/dim]" if desc else ""
+                    
+                flag_data.append([flag_name, flag_value, flag_desc])
 
-            # Split into 3 columns
-            third = (len(flag_data) + 2) // 3
-            col1 = flag_data[:third]
-            col2 = flag_data[third:third*2]
-            col3 = flag_data[third*2:]
+            # Split into 2 columns for better readability
+            mid = (len(flag_data) + 1) // 2
+            left_col = flag_data[:mid]
+            right_col = flag_data[mid:]
 
-            for i in range(max(len(col1), len(col2), len(col3))):
-                c1 = col1[i] if i < len(col1) else ["", ""]
-                c2 = col2[i] if i < len(col2) else ["", ""]
-                c3 = col3[i] if i < len(col3) else ["", ""]
-                table.add_row(c1[0], c1[1], c2[0], c2[1], c3[0], c3[1])
+            for i in range(max(len(left_col), len(right_col))):
+                left = left_col[i] if i < len(left_col) else ["", "", ""]
+                right = right_col[i] if i < len(right_col) else ["", "", ""]
+                table.add_row(left[0], left[1], left[2], right[0], right[1], right[2])
             
             console.print(table)
 
@@ -1285,15 +1348,15 @@ class AssemblyREPL:
         
         if show_regs:
             console.print()  # Add spacing
-            self.show_registers(compact=True, highlight_changes=changes['registers'])
+            self.show_registers(highlight_changes=changes['registers'])
         
         if show_stack:
             console.print()  # Add spacing  
-            self.show_stack(compact=True, highlight_changes=changes['stack'])
+            self.show_stack(highlight_changes=changes['stack'])
         
         if show_code:
             console.print()  # Add spacing
-            self.show_code(compact=True)
+            self.show_code()
         
         # Update previous state for next comparison
         self.previous_state = self._capture_state()
