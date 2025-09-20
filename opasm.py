@@ -485,7 +485,8 @@ class AssemblyREPL:
             'help', 'arch', 'registers', 'reg', 'memory', 'mem', 'regions', 'assemble', 'asm',
             'disasm', 'step', 'run', 'reset', 'save', 'load', 'load_asm', 'load_bin', 
             'dump_asm', 'dump_mem', 'set_reg', 'set_mem', 'breakpoint', 'bp', 'clear_bp', 
-            'list_bp', 'quit', 'exit', 'toggle_display', 'toggle_direct', 'endian'
+            'list_bp', 'quit', 'exit', 'toggle_display', 'toggle_direct', 'endian',
+            '?', 'calculate'
         ]
         self._update_completer()
 
@@ -802,6 +803,12 @@ class AssemblyREPL:
   load_bin <file> <addr> - Load binary file into memory
   dump_asm <file>        - Dump assembly history to file
   dump_mem <file> <addr> <size> - Dump memory region to file
+
+[bold green]Calculator:[/bold green]
+  ? <expression>         - WinDbg-style calculator with register dereferencing
+  calculate <expression> - Alternative to ? command
+                          Supports +, -, *, /, &, |, ^, ~, <<, >>, parentheses
+                          Use $register to reference register values
 
 [bold green]Display & Settings:[/bold green]
   toggle_display         - Toggle automatic register/stack display
@@ -1751,6 +1758,157 @@ class AssemblyREPL:
         endian = "Little-endian" if self.arch_config.is_little_endian else "Big-endian"
         print_info(f"Current endianness: {endian}")
 
+    def _calculate_expression(self, expression: str) -> tuple[int, str]:
+        """Calculate expression with register dereferencing and return (result, error_msg)"""
+        import re
+        
+        try:
+            # Remove spaces for easier parsing
+            expr = expression.replace(' ', '')
+            
+            # Replace register references with their values
+            reg_pattern = r'\$([a-zA-Z_][a-zA-Z0-9_]*(?:\([a-zA-Z0-9_]*\))?)'
+            
+            def replace_register(match):
+                reg_name = match.group(1).lower()
+                if reg_name in self.arch_config.registers:
+                    try:
+                        reg_value = self.uc.reg_read(self.arch_config.registers[reg_name])
+                        return str(reg_value)
+                    except Exception as e:
+                        raise ValueError(f"Error reading register {reg_name}: {e}")
+                else:
+                    raise ValueError(f"Unknown register: {reg_name}")
+            
+            # Replace all register references
+            expr = re.sub(reg_pattern, replace_register, expr)
+            
+            # Support basic arithmetic and bitwise operations
+            # Convert hex literals
+            hex_pattern = r'0x([0-9a-fA-F]+)'
+            expr = re.sub(hex_pattern, lambda m: str(int(m.group(1), 16)), expr)
+            
+            # Validate expression contains only allowed characters
+            allowed_chars = set('0123456789+-*/&|^~()<>')
+            if not all(c in allowed_chars for c in expr):
+                return 0, "Expression contains invalid characters"
+            
+            # Replace bitwise operators for Python evaluation
+            expr = expr.replace('&', ' & ')
+            expr = expr.replace('|', ' | ')
+            expr = expr.replace('^', ' ^ ')
+            expr = expr.replace('~', ' ~ ')
+            expr = expr.replace('<<', ' << ')
+            expr = expr.replace('>>', ' >> ')
+            
+            # Evaluate the expression safely
+            # Use eval with restricted globals for safety
+            allowed_names = {"__builtins__": {}}
+            result = eval(expr, allowed_names, {})
+            
+            # Ensure result is an integer
+            if isinstance(result, (int, float)):
+                return int(result), ""
+            else:
+                return 0, "Expression did not evaluate to a number"
+                
+        except ZeroDivisionError:
+            return 0, "Division by zero"
+        except ValueError as e:
+            return 0, str(e)
+        except SyntaxError:
+            return 0, "Invalid expression syntax"
+        except Exception as e:
+            return 0, f"Calculation error: {e}"
+
+    def _format_calculation_result(self, result: int, expression: str):
+        """Format calculation result in WinDbg style"""
+        # Create result display table
+        table = Table(title=f"Calculator: {expression}", box=box.ROUNDED)
+        table.add_column("Format", style="cyan", min_width=12)
+        table.add_column("Value", style="yellow", min_width=20)
+        table.add_column("Format", style="cyan", min_width=12) 
+        table.add_column("Value", style="yellow", min_width=20)
+        
+        # Format in various representations
+        hex_val = f"0x{result:x}" if result >= 0 else f"-0x{abs(result):x}"
+        decimal_val = str(result)
+        
+        # Handle signed/unsigned representations for different word sizes
+        word_size = self.arch_config.word_size
+        max_val = (1 << (word_size * 8)) - 1
+        
+        if result < 0:
+            unsigned_val = result + (1 << (word_size * 8))
+            if unsigned_val > max_val:
+                unsigned_val = result  # Keep original if overflow
+        else:
+            unsigned_val = result
+            
+        # Check if value fits in word size
+        if result >= 0 and result <= max_val:
+            binary_val = f"0b{result:b}"
+        else:
+            binary_val = f"0b{result & ((1 << (word_size * 8)) - 1):b}"
+            
+        # Octal representation  
+        octal_val = f"0o{result:o}" if result >= 0 else f"-0o{abs(result):o}"
+        
+        # ASCII representation (if printable)
+        ascii_val = ""
+        if 0 <= result <= 127:
+            if 32 <= result <= 126:
+                ascii_val = f"'{chr(result)}'"
+            else:
+                ascii_val = f"'\\x{result:02x}'"
+        
+        # Add rows to table
+        table.add_row("Decimal", decimal_val, "Hexadecimal", hex_val)
+        
+        if result != unsigned_val:
+            table.add_row("Unsigned", str(unsigned_val), "Binary", binary_val[:50] + "..." if len(binary_val) > 50 else binary_val)
+        else:
+            table.add_row("Octal", octal_val, "Binary", binary_val[:50] + "..." if len(binary_val) > 50 else binary_val)
+            
+        if ascii_val:
+            table.add_row("ASCII", ascii_val, "", "")
+        
+        console.print(table)
+        
+        # Show bit breakdown for interesting values
+        if result != 0 and result <= 0xffffffff:  # Show bit breakdown for 32-bit values
+            self._show_bit_breakdown(result)
+    
+    def _show_bit_breakdown(self, value: int):
+        """Show bit-by-bit breakdown of a value"""
+        if value == 0:
+            return
+            
+        # Show which bits are set
+        table = Table(title="Bit Breakdown", box=box.ROUNDED, show_header=False)
+        table.add_column("", style="cyan", min_width=8)
+        table.add_column("", style="yellow", min_width=50)
+        
+        # Find set bits
+        set_bits = []
+        for i in range(32):  # Check up to 32 bits
+            if (value >> i) & 1:
+                set_bits.append(i)
+        
+        if set_bits:
+            bits_str = " + ".join([f"2^{bit}" for bit in set_bits])
+            if len(bits_str) > 100:  # Truncate if too long
+                bits_str = bits_str[:100] + "..."
+            table.add_row("Powers", bits_str)
+            
+            # Show bit positions
+            positions_str = " + ".join([f"bit{bit}" for bit in set_bits])
+            if len(positions_str) > 100:
+                positions_str = positions_str[:100] + "..."
+            table.add_row("Positions", positions_str)
+        
+        console.print(table)
+
     def parse_value(self, value_str: str) -> int:
         """Parse integer value from string (supports hex, decimal, and register dereferencing)"""
         value_str = value_str.strip()
@@ -2000,6 +2158,18 @@ class AssemblyREPL:
                     else:
                         print_warning("Instructions will be loaded into memory before execution")
                 
+                elif command in ['?', 'calculate', 'calc']:
+                    if len(parts) < 2:
+                        print_error("Usage: ? <expression> or calculate <expression>")
+                        print_info("Examples: ? 1+2*3, ? $rax+0x100, calculate $eax&0xFF")
+                    else:
+                        expression = ' '.join(parts[1:])
+                        result, error = self._calculate_expression(expression)
+                        if error:
+                            print_error(f"Calculation error: {error}")
+                        else:
+                            self._format_calculation_result(result, expression)
+                
                 else:
                     # If it's not a known command, treat it as an assembly instruction
                     self.assemble_and_execute(user_input)
@@ -2008,7 +2178,7 @@ class AssemblyREPL:
                     continue
                 
                 # Show auto panels after most commands (except help, quit, etc.)
-                if command not in ['help', 'quit', 'exit', 'toggle_display']:
+                if command not in ['help', 'quit', 'exit', 'toggle_display', '?', 'calculate', 'calc']:
                     self._display_auto_panels()
             
             except KeyboardInterrupt:
