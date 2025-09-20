@@ -842,12 +842,12 @@ class AssemblyREPL:
         )
         console.print(help_panel)
 
-    def show_registers(self, compact: bool = False, highlight_changes: set = None):
+    def show_registers(self, vertical_compact: bool = False, horizontal_compact: bool = False, highlight_changes: set = None):
         """Display current register values using rich table"""
         if highlight_changes is None:
             highlight_changes = set()
             
-        if compact:
+        if vertical_compact:
             # Compact display for auto-display mode
             table = Table(title=f"Registers ({self.arch_config.name.upper()})", box=box.ROUNDED, show_header=False, padding=0)
             table.add_column("", style="cyan", min_width=8)
@@ -926,11 +926,27 @@ class AssemblyREPL:
                 right = right_col[i] if i < len(right_col) else ["", "", ""]
                 table.add_row(left[0], left[1], left[2], right[0], right[1], right[2])
         
-        console.print(table)
-
-        # Show flags if not in compact mode
-        if not compact:
+        # Show flags if not in vertical_compact mode
+        if not vertical_compact:
+            # Check terminal width to decide layout
+            width, height = self._check_screen_size()
+            
+            # If terminal is wide enough (120+ columns), show flags side by side
+            if width >= 120:
+                # Get flags table separately and display side by side
+                flags_table = self._get_flags_table()
+                if flags_table:
+                    # Use Columns to display registers and flags side by side
+                    console.print(Columns([table, flags_table]))
+                    return  # Don't print the registers table again
+            
+            # Default behavior: show flags below registers
+            console.print(table)
             self.show_flags()
+            return
+        
+        # For compact mode, just show the registers table
+        console.print(table)
 
     def _get_flags_info(self):
         """Get flag register name and flag definitions for the current architecture"""
@@ -1036,16 +1052,16 @@ class AssemblyREPL:
             }
         return {}
 
-    def show_flags(self):
-        """Display decoded flags for the current architecture in WinDbg style"""
+    def _get_flags_table(self):
+        """Get flags table for side-by-side display with registers"""
         flag_reg_name, flags = self._get_flags_info()
         if not flag_reg_name or not flags:
-            return
+            return None
 
         try:
             flag_reg_id = self.arch_config.registers.get(flag_reg_name)
             if not flag_reg_id:
-                return
+                return None
             
             value = self.uc.reg_read(flag_reg_id)
             flag_descriptions = self._get_flag_descriptions()
@@ -1087,12 +1103,20 @@ class AssemblyREPL:
                 right = right_col[i] if i < len(right_col) else ["", "", ""]
                 table.add_row(left[0], left[1], left[2], right[0], right[1], right[2])
             
-            console.print(table)
+            return table
 
         except Exception as e:
-            print_warning(f"Could not display flags: {e}")
+            return None
 
-    def show_stack(self, compact: bool = False, highlight_changes: set = None):
+    def show_flags(self):
+        """Display decoded flags for the current architecture in WinDbg style"""
+        flags_table = self._get_flags_table()
+        if flags_table:
+            console.print(flags_table)
+        else:
+            print_warning("Could not display flags for current architecture")
+
+    def show_stack(self, vertical_compact: bool = False, horizontal_compact: bool = False, highlight_changes: set = None):
         """Display stack contents"""
         if highlight_changes is None:
             highlight_changes = set()
@@ -1108,10 +1132,10 @@ class AssemblyREPL:
             sp_value = self.uc.reg_read(sp_reg)
             
             # Read stack data (64 bytes from stack pointer)
-            stack_size = 32 if compact else 64
+            stack_size = 32 if vertical_compact else 64
             data = self.uc.mem_read(sp_value, stack_size)
             
-            if compact:
+            if vertical_compact:
                 table = Table(title="Stack", box=box.ROUNDED, show_header=False, padding=0)
                 table.add_column("", style="yellow", min_width=12)
                 table.add_column("", style="white", min_width=24)
@@ -1165,7 +1189,7 @@ class AssemblyREPL:
             console.print(table)
                 
         except Exception as e:
-            if compact:
+            if vertical_compact:
                 print_error(f"Stack unavailable")
             else:
                 print_error(f"Error reading stack: {e}")
@@ -1254,7 +1278,7 @@ class AssemblyREPL:
         
         return changes
 
-    def show_code(self, compact: bool = False):
+    def show_code(self, vertical_compact: bool = False, horizontal_compact: bool = False):
         """Display code disassembly around current instruction pointer"""
         try:
             # Get current instruction pointer
@@ -1293,7 +1317,7 @@ class AssemblyREPL:
             end_idx = min(len(instructions), current_idx + 3)
             context_instructions = instructions[start_idx:end_idx]
             
-            if compact:
+            if vertical_compact:
                 table = Table(title="Code", box=box.ROUNDED, show_header=False, padding=0)
                 table.add_column("", style="yellow", min_width=12)
                 table.add_column("", style="cyan", min_width=16)
@@ -1313,7 +1337,7 @@ class AssemblyREPL:
                 
                 # Highlight current instruction
                 if insn.address == current_ip:
-                    if compact:
+                    if vertical_compact:
                         addr_display = f"[bold green]{addr_str}[/bold green]"
                         bytes_display = f"[bold green]{bytes_str}[/bold green]"
                         insn_display = f"[bold green]{insn_str}[/bold green]"
@@ -1334,7 +1358,7 @@ class AssemblyREPL:
             console.print(table)
                 
         except Exception as e:
-            if compact:
+            if vertical_compact:
                 print_error(f"Code unavailable")
             else:
                 print_error(f"Error reading code: {e}")
