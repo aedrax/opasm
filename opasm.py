@@ -1145,7 +1145,8 @@ class AssemblyREPL:
                     addr = sp_value + i
                     chunk = data[i:i+self.arch_config.word_size]
                     if len(chunk) >= self.arch_config.word_size:
-                        value = int.from_bytes(chunk, 'little')
+                        byteorder = 'little' if self.arch_config.is_little_endian else 'big'
+                        value = int.from_bytes(chunk, byteorder)
                         hex_val = f"0x{value:0{self.arch_config.word_size*2}x}"
                         
                         # Apply bold formatting if stack value changed
@@ -1169,7 +1170,8 @@ class AssemblyREPL:
                     addr = sp_value + i
                     chunk = data[i:i+self.arch_config.word_size]
                     if len(chunk) >= self.arch_config.word_size:
-                        value = int.from_bytes(chunk, 'little')
+                        byteorder = 'little' if self.arch_config.is_little_endian else 'big'
+                        value = int.from_bytes(chunk, byteorder)
                         hex_val = f"0x{value:0{self.arch_config.word_size*2}x}"
                         ascii_str = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in chunk)
                         
@@ -1245,7 +1247,8 @@ class AssemblyREPL:
                     addr = sp_value + (i * self.arch_config.word_size)
                     try:
                         data = self.uc.mem_read(addr, self.arch_config.word_size)
-                        value = int.from_bytes(data, 'little')
+                        byteorder = 'little' if self.arch_config.is_little_endian else 'big'
+                        value = int.from_bytes(data, byteorder)
                         state['stack'][addr] = value
                     except:
                         state['stack'][addr] = None
@@ -1587,7 +1590,8 @@ class AssemblyREPL:
     def set_memory(self, address: int, value: int, size: int = 4):
         """Set memory value"""
         try:
-            data = value.to_bytes(size, 'little')
+            byteorder = 'little' if self.arch_config.is_little_endian else 'big'
+            data = value.to_bytes(size, byteorder)
             self.uc.mem_write(address, data)
             print_info(f"Set memory[0x{address:x}] = 0x{value:x}")
         except Exception as e:
